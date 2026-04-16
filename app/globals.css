@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight;
+  }
+}
+
+@layer components {
+  /* High-Impact Gradient Button */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-[10px] text-white font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    background: linear-gradient(135deg, #4F46E5, #1E3A8A);
+    box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.3);
+  }
+  
+  .btn-primary:hover {
+    @apply -translate-y-0.5 shadow-lg;
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+  }
+
+  /* Secondary Button */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-2.5 rounded-[10px] bg-white border border-slate-200 text-slate-700 font-semibold transition-all hover:bg-slate-50 hover:border-slate-300 active:scale-95 shadow-sm;
+  }
+
+  /* Elevated Card */
+  .card-premium {
+    @apply bg-white border border-slate-100 rounded-[12px] p-6 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] transition-all hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)];
+  }
+
+  /* Glass Card (Legacy Support) */
+  .glass-card {
+    @apply bg-white border border-slate-100 rounded-[12px] p-6 shadow-sm;
+  }
+
+  /* Standard Input */
+  .input-standard {
+    @apply w-full px-4 py-2.5 rounded-[10px] border border-slate-200 bg-white text-slate-900 outline-none transition-all focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 placeholder:text-slate-400;
+  }
+
+  /* Thick colorful progress bars */
+  .progress-thick {
+    @apply h-[8px] w-full bg-slate-100 rounded-full overflow-hidden;
+  }
+
+  .progress-bar-fill {
+    @apply h-full rounded-full transition-all duration-1000;
+    background: linear-gradient(90deg, #10B981, #059669);
+  }
+}
+
+@layer utilities {
+  .text-primary {
+    @apply text-[#0F172A];
+  }
+  .text-secondary {
+    @apply text-[#64748B];
+  }
+  .bg-navy {
+    @apply bg-[#0F172A];
+  }
+  .gradient-brand {
+    background: linear-gradient(135deg, #4F46E5, #1E3A8A);
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-slate-50;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-400 transition-colors;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

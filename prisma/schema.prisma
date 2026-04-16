@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  passwordHash String
+  role         String    // ADMIN or SECTOR
+  sector       Sector?   // 1:1 if role is SECTOR
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Sector {
+  id        String    @id @default(cuid())
+  name      String
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id])
+  units     Unit[]
+  reports   MeetingReport[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Unit {
+  id        String    @id @default(cuid())
+  name      String
+  sectorId  String
+  sector    Sector    @relation(fields: [sectorId], references: [id])
+  reports   MeetingReport[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Meeting {
+  id               String    @id @default(cuid())
+  name             String
+  description      String?
+  venue            String?
+  startDate        DateTime
+  endDate          DateTime
+  targetGroup      String    // SECTOR or UNIT
+  assignedSectorId String?   // Optional: Null means all sectors or all units depending on targetGroup
+  assignedUnitId   String?   // Optional: For specific unit targeting
+  reports          MeetingReport[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model MeetingReport {
+  id                 String   @id @default(cuid())
+  meetingId          String
+  meeting            Meeting  @relation(fields: [meetingId], references: [id])
+  sectorId           String
+  sector             Sector   @relation(fields: [sectorId], references: [id])
+  unitId             String?  // Optional, only if targetGroup is UNIT
+  unit               Unit?    @relation(fields: [unitId], references: [id])
+  attendanceCount    Int
+  venue              String?
+  representativeName String
+  minutesImagePath   String
+  submittedAt        DateTime @default(now())
+  
+  @@unique([meetingId, sectorId, unitId]) // Refined unique constraint
+}
