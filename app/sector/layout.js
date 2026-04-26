@@ -2,10 +2,11 @@ import { getSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { LayoutDashboard, Calendar, FileText, Trophy, LogOut, ShieldCheck } from 'lucide-react';
+import { logout } from '@/app/actions/auth';
 
 export default async function SectorLayout({ children }) {
   const session = await getSession();
-  if (!session || session.role !== 'SECTOR') redirect('/login');
+  if (!session || session.role !== 'SECTOR') redirect('/');
 
   const navItems = [
     { name: 'Overview', href: '/sector/dashboard', icon: LayoutDashboard },
@@ -40,7 +41,7 @@ export default async function SectorLayout({ children }) {
         </nav>
 
         <div className="p-6 mt-auto border-t border-white/5 bg-navy-950/30">
-          <form action="/login" method="POST">
+          <form action={logout}>
             <button type="submit" className="flex items-center gap-4 px-5 py-4 rounded-[10px] w-full text-rose-400 hover:bg-rose-500/10 transition-all font-semibold text-xs uppercase tracking-widest group">
               <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
               <span>Identity Sign Out</span>
@@ -59,7 +60,7 @@ export default async function SectorLayout({ children }) {
             </div>
             <span className="font-bold tracking-tighter text-xs text-navy-900 uppercase leading-none">Sector Hub.</span>
           </div>
-          <form action="/login" method="POST">
+          <form action={logout}>
             <button type="submit" className="text-slate-400 hover:text-navy-900 p-2">
               <LogOut className="w-4 h-4 text-slate-400" />
             </button>
