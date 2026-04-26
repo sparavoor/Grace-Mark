@@ -50,26 +50,26 @@ export default async function SectorDetailPage({ params }) {
           className="inline-flex items-center gap-2.5 text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em] hover:text-indigo-600 transition-all group"
         >
           <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1.5 transition-transform" />
-          Hub Analytics
+          Admin Home
         </Link>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
           <div className="text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start gap-3 mb-6">
                 <div className="px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-lg text-[9px] font-medium text-indigo-600 uppercase tracking-widest shadow-sm">
-                    NODE: {params.id.slice(-6).toUpperCase()}
+                    ID: {params.id.slice(-6).toUpperCase()}
                 </div>
                 <Activity className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
             </div>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tighter text-slate-900 leading-[0.9] uppercase">{sector.name}</h1>
-            <p className="text-slate-500 mt-6 font-normal text-base md:text-lg max-w-xl mx-auto md:mx-0 leading-relaxed uppercase tracking-tight">Intelligence Audit & Performance Drill-down</p>
+            <p className="text-slate-500 mt-6 font-normal text-base md:text-lg max-w-xl mx-auto md:mx-0 leading-relaxed uppercase tracking-tight">Sector Details and Marks Overview</p>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="flex flex-col items-center justify-center w-full sm:w-48 py-8 bg-slate-900 rounded-[2.5rem] text-white shadow-2xl shadow-slate-900/30 group hover:scale-105 transition-transform">
-              <p className="text-[9px] font-medium uppercase text-indigo-400 tracking-[0.3em] mb-3 opacity-80">Efficiency Index</p>
+              <p className="text-[9px] font-medium uppercase text-indigo-400 tracking-[0.3em] mb-3 opacity-80">Progress</p>
               <p className="text-4xl md:text-5xl font-semibold leading-none">{((scores.total / 20) * 100).toFixed(0)}%</p>
             </div>
             <div className="flex flex-col items-center justify-center w-full sm:w-48 py-8 glass-card border-indigo-100 rounded-[2.5rem] shadow-xl group hover:scale-105 transition-transform">
-              <p className="text-[9px] font-medium uppercase text-slate-400 tracking-[0.3em] mb-3 opacity-80">Grace Allocation</p>
+              <p className="text-[9px] font-medium uppercase text-slate-400 tracking-[0.3em] mb-3 opacity-80">Total Marks</p>
               <div className="flex items-baseline justify-center gap-1.5 leading-none">
                   <p className="text-4xl md:text-5xl font-semibold text-indigo-600 leading-none">{scores.total.toFixed(1)}</p>
                   <span className="text-[10px] text-slate-300 font-medium tracking-tighter uppercase">/ 20.0</span>
@@ -82,7 +82,7 @@ export default async function SectorDetailPage({ params }) {
       {/* Stats Grid - Optimized for all screens */}
       <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
         <ScaleIn className="glass-card hover:border-indigo-300 transition-all border-slate-100 p-6 md:p-8">
-          <p className="text-[9px] md:text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] mb-4">Assigned Bases</p>
+          <p className="text-[9px] md:text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] mb-4">Total Units</p>
           <div className="flex items-center gap-4">
             <div className="p-3 bg-indigo-50 rounded-2xl md:rounded-3xl">
                 <Layers className="w-5 h-5 md:w-6 md:h-6 text-indigo-600" />
@@ -91,7 +91,7 @@ export default async function SectorDetailPage({ params }) {
           </div>
         </ScaleIn>
         <ScaleIn delay={0.1} className="glass-card hover:border-indigo-300 transition-all border-slate-100 p-6 md:p-8">
-          <p className="text-[9px] md:text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] mb-4">Node Sessions</p>
+          <p className="text-[9px] md:text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] mb-4">Sector Reports</p>
           <div className="flex items-center gap-4">
             <div className="p-3 bg-emerald-50 rounded-2xl md:rounded-3xl">
                 <Activity className="w-5 h-5 md:w-6 md:h-6 text-emerald-600" />
@@ -100,7 +100,7 @@ export default async function SectorDetailPage({ params }) {
           </div>
         </ScaleIn>
         <ScaleIn delay={0.2} className="glass-card hover:border-indigo-300 transition-all border-slate-100 p-6 md:p-8">
-          <p className="text-[9px] md:text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] mb-4">Inbound Intake</p>
+          <p className="text-[9px] md:text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] mb-4">Unit Reports</p>
           <div className="flex items-center gap-4">
             <div className="p-3 bg-amber-50 rounded-2xl md:rounded-3xl">
                 <BarChart3 className="w-5 h-5 md:w-6 md:h-6 text-amber-600" />
@@ -109,12 +109,12 @@ export default async function SectorDetailPage({ params }) {
           </div>
         </ScaleIn>
         <ScaleIn delay={0.3} className="glass-card hover:border-indigo-300 transition-all border-slate-100 p-6 md:p-8">
-          <p className="text-[9px] md:text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] mb-4">Security Tier</p>
+          <p className="text-[9px] md:text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] mb-4">Status</p>
           <div className="flex items-center gap-4">
             <div className="p-3 bg-slate-900 rounded-2xl md:rounded-3xl shadow-lg">
                 <Trophy className="w-5 h-5 md:w-6 md:h-6 text-indigo-400" />
             </div>
-            <p className="text-2xl md:text-4xl font-semibold text-slate-900 tracking-tighter leading-none">ALPHA</p>
+            <p className="text-2xl md:text-4xl font-semibold text-slate-900 tracking-tighter leading-none">ACTIVE</p>
           </div>
         </ScaleIn>
       </StaggerContainer>
@@ -125,7 +125,7 @@ export default async function SectorDetailPage({ params }) {
           <FadeInUp className="glass-card border-indigo-100 border shadow-2xl shadow-indigo-100/20 p-8 md:p-10">
             <h2 className="text-2xl font-bold text-slate-900 mb-10 flex items-center gap-3 tracking-tight">
               <div className="w-1.5 h-6 bg-indigo-600 rounded-full" />
-              UNIT FLOW
+              UNIT REPORTS
             </h2>
             <div className="space-y-10">
               {sector.units.map((unit, idx) => {
@@ -138,7 +138,7 @@ export default async function SectorDetailPage({ params }) {
                         <MapPin className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
                         <span className="text-sm font-bold text-slate-900 tracking-[0.05em] uppercase group-hover:text-indigo-600 transition-colors leading-none">{unit.name}</span>
                       </div>
-                      <span className="text-[9px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded leading-none">LEVEL {count}/5</span>
+                      <span className="text-[9px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded leading-none">{count}/5 Reports</span>
                     </div>
                     <div className="h-3.5 bg-slate-50 border border-slate-100 rounded-full overflow-hidden p-0.5 shadow-inner">
                       <div 
@@ -163,15 +163,16 @@ export default async function SectorDetailPage({ params }) {
              <LayoutDashboard className="absolute -right-6 -top-6 w-32 h-32 text-indigo-500 opacity-5 group-hover:opacity-10 transition-opacity" />
              <h3 className="text-xl font-bold mb-6 text-indigo-400 tracking-tight flex items-center gap-2 uppercase">
                 <Activity className="w-5 h-5" />
-                Audit AI Intel
+                Calculation Details
              </h3>
              <p className="text-xs text-slate-400 leading-relaxed font-normal uppercase tracking-tight">
-               Derivation Pipeline: Core Node verification (1.0 marks per verified minutes submission) + Aggregate Base Efficiency (Normalized against quarterly 5-report milestones). 
+               Sector Marks: Max 10 (Scaled by 8 meetings). <br />
+               Unit Marks: Max 10 (Scaled by the total number of units in this sector, requiring 5 meetings each).
              </p>
              <div className="mt-10 pt-8 border-t border-white/5 flex justify-between items-center">
                  <span className="text-[9px] font-normal text-slate-600 uppercase tracking-widest">V 3.1.2 FINAL</span>
                  <div className="flex gap-2 font-medium text-[9px] text-indigo-500 uppercase">
-                     ENCRYPTED STREAM <Activity className="w-2.5 h-2.5 animate-pulse" />
+                     LIVE SYSTEM <Activity className="w-2.5 h-2.5 animate-pulse" />
                  </div>
              </div>
           </FadeInUp>
@@ -183,10 +184,10 @@ export default async function SectorDetailPage({ params }) {
             <div className="px-6 md:px-10 py-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/20">
               <h2 className="text-xl md:text-2xl font-bold text-slate-900 flex items-center gap-3 tracking-tighter uppercase whitespace-nowrap">
                 <FileText className="w-5 h-5 md:w-6 md:h-6 text-indigo-600" />
-                AUDIT TRAIL
+                REPORT HISTORY
               </h2>
               <span className="text-[8px] md:text-[10px] font-medium text-indigo-600 uppercase tracking-[0.2em] bg-white px-3 md:px-5 py-2 rounded-full border border-indigo-100 shadow-sm leading-none whitespace-nowrap">
-                LIVE INTEL NODE
+                REAL-TIME
               </span>
             </div>
             
@@ -195,10 +196,10 @@ export default async function SectorDetailPage({ params }) {
               <table className="w-full text-left">
                 <thead className="bg-slate-50/50">
                   <tr>
-                    <th className="px-10 py-5 text-[10px] font-semibold text-slate-400 uppercase tracking-[0.2em]">Session Typology</th>
-                    <th className="px-10 py-5 text-[10px] font-semibold text-slate-400 uppercase tracking-[0.2em] text-center">Protocol Source</th>
-                    <th className="px-10 py-5 text-[10px] font-semibold text-slate-400 uppercase tracking-[0.2em] text-center whitespace-nowrap">Personnel.</th>
-                    <th className="px-10 py-5 text-[10px] font-semibold text-slate-400 uppercase tracking-[0.2em] text-right">Intel Source</th>
+                    <th className="px-10 py-5 text-[10px] font-semibold text-slate-400 uppercase tracking-[0.2em]">Meeting Name</th>
+                    <th className="px-10 py-5 text-[10px] font-semibold text-slate-400 uppercase tracking-[0.2em] text-center">Source</th>
+                    <th className="px-10 py-5 text-[10px] font-semibold text-slate-400 uppercase tracking-[0.2em] text-center whitespace-nowrap">Attendance</th>
+                    <th className="px-10 py-5 text-[10px] font-semibold text-slate-400 uppercase tracking-[0.2em] text-right">Photo</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100/50">
@@ -207,7 +208,7 @@ export default async function SectorDetailPage({ params }) {
                       <td className="px-10 py-7">
                         <p className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors tracking-tight uppercase leading-none">{report.meeting.name}</p>
                         <p className="text-[9px] font-normal text-slate-300 uppercase mt-2.5 tracking-tighter">
-                          RECORDED IN ARCHIVE: {new Date(report.submittedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                          SUBMITTED ON: {new Date(report.submittedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
                       </td>
                       <td className="px-10 py-7 text-center">
@@ -216,13 +217,13 @@ export default async function SectorDetailPage({ params }) {
                             ? 'bg-amber-50 text-amber-600 border-amber-100' 
                             : 'bg-indigo-50 text-indigo-600 border-indigo-100'
                         }`}>
-                          {report.unitId ? report.unit.name : 'Primary Core Node'}
+                          {report.unitId ? report.unit.name : 'Sector Office'}
                         </span>
                       </td>
                       <td className="px-10 py-7 text-center">
                         <div className="inline-flex flex-col items-center px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl group-hover:bg-white group-hover:shadow-md transition-all">
                             <span className="text-sm font-semibold text-slate-900 leading-none">{report.attendanceCount}</span>
-                            <span className="text-[7px] font-medium text-slate-400 uppercase mt-1">Personnel</span>
+                            <span className="text-[7px] font-medium text-slate-400 uppercase mt-1">Attendance</span>
                         </div>
                       </td>
                       <td className="px-10 py-7 text-right">
@@ -233,7 +234,7 @@ export default async function SectorDetailPage({ params }) {
                             rel="noreferrer"
                             className="inline-flex items-center gap-2.5 py-3.5 px-6 bg-slate-900 rounded-[1.25rem] text-[9px] font-semibold uppercase text-white hover:bg-indigo-600 hover:shadow-xl hover:shadow-indigo-600/20 transition-all leading-none"
                           >
-                            Digital Evidence <ChevronRight className="w-3.5 h-3.5" />
+                            View Photo <ChevronRight className="w-3.5 h-3.5" />
                           </a>
                         )}
                       </td>
@@ -268,7 +269,7 @@ export default async function SectorDetailPage({ params }) {
                            </div>
                            <div className="flex flex-col leading-none">
                               <span className="text-lg font-semibold text-slate-900 leading-none">{report.attendanceCount}</span>
-                              <span className="text-[8px] font-medium text-slate-400 uppercase tracking-widest mt-1">Staff Engaged</span>
+                              <span className="text-[8px] font-medium text-slate-400 uppercase tracking-widest mt-1">Attendance</span>
                            </div>
                         </div>
                         {report.minutesImagePath && (
@@ -293,7 +294,7 @@ export default async function SectorDetailPage({ params }) {
 
             {sector.reports.length === 0 && (
               <div className="py-32 text-center">
-                <p className="text-xs font-normal text-slate-200 uppercase tracking-[0.3em] border border-slate-50 inline-block px-10 py-5 rounded-[2rem]">Stream is currently empty</p>
+                <p className="text-xs font-normal text-slate-200 uppercase tracking-[0.3em] border border-slate-50 inline-block px-10 py-5 rounded-[2rem]">No reports found</p>
               </div>
             )}
           </FadeInUp>

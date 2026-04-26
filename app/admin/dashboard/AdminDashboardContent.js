@@ -10,13 +10,13 @@ export default function AdminDashboardContent({ sectors, totalUnits, totalReport
       <FadeInUp className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-slate-200">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-navy-900 uppercase">
-            Division <span className="text-indigo-600">Analytics</span>
+            Division <span className="text-indigo-600">Dashboard</span>
           </h1>
-          <p className="text-slate-500 font-normal text-sm md:text-base mt-1">Real-time performance distribution across organizational tiers.</p>
+          <p className="text-slate-500 font-normal text-sm md:text-base mt-1">Status of Sectors and Units.</p>
         </div>
         <div className="flex items-center gap-3 px-6 py-3 bg-white border border-slate-200 rounded-[10px] text-navy-900 font-semibold text-xs shadow-sm">
           <Activity className="w-4 h-4 text-emerald-500 animate-pulse" />
-          <span className="uppercase tracking-[0.2em] font-bold">Live Verification Hub</span>
+          <span className="uppercase tracking-[0.2em] font-bold">Portal Status</span>
         </div>
       </FadeInUp>
 
@@ -34,18 +34,18 @@ export default function AdminDashboardContent({ sectors, totalUnits, totalReport
           <div className="absolute top-0 right-0 w-16 h-16 bg-brand-light/20 -mr-8 -mt-8 rounded-full" />
           <p className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
             <Network className="w-3.5 h-3.5" />
-            Active Units
+            Total Units
           </p>
           <p className="text-4xl font-semibold text-navy-900 leading-none">{totalUnits}</p>
         </ScaleIn>
         <ScaleIn delay={0.2} className="card-premium group relative overflow-hidden border-b-4 border-b-brand-indigo">
           <p className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
             <FileCheck className="w-3.5 h-3.5 text-brand-indigo" />
-            Submissions
+            Reports
           </p>
           <div className="flex items-baseline gap-2">
             <p className="text-4xl font-semibold text-navy-900 leading-none">{totalReports}</p>
-            <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">Valid</span>
+            <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">Total</span>
           </div>
         </ScaleIn>
         <ScaleIn delay={0.3} className="card-premium group relative overflow-hidden border-b-4 border-b-brand-emerald shadow-emerald-500/10">
@@ -67,7 +67,7 @@ export default function AdminDashboardContent({ sectors, totalUnits, totalReport
             Sector Performance
           </h2>
           <span className="px-6 py-2.5 bg-navy-900 text-white rounded-full text-[10px] font-bold uppercase tracking-[0.3em] shadow-xl shadow-navy-900/20">
-            Leaderboard Stream
+            Ranking
           </span>
         </FadeInUp>
         
@@ -81,13 +81,13 @@ export default function AdminDashboardContent({ sectors, totalUnits, totalReport
 
               <div className="mb-10 mr-10 relative z-10">
                 <h3 className="text-2xl font-bold text-navy-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight leading-none">{sector.name}</h3>
-                <p className="text-[10px] font-medium text-slate-400 mt-2 uppercase tracking-widest">{sector.units.length} Operational Units</p>
+                <p className="text-[10px] font-medium text-slate-400 mt-2 uppercase tracking-widest">{sector.units.length} Units</p>
               </div>
 
               <div className="space-y-8 flex-grow relative z-10">
                 <div>
                   <div className="flex justify-between text-[11px] font-medium mb-3">
-                    <span className="text-slate-400 uppercase tracking-widest">Sector Integrity</span>
+                    <span className="text-slate-400 uppercase tracking-widest">Sector Marks</span>
                     <span className="text-navy-900">{sector.scores.sectorMarks.toFixed(1)} / 10.0</span>
                   </div>
                   <div className="progress-thick">
@@ -100,7 +100,7 @@ export default function AdminDashboardContent({ sectors, totalUnits, totalReport
 
                 <div>
                   <div className="flex justify-between text-[11px] font-medium mb-3">
-                    <span className="text-slate-400 uppercase tracking-widest">Base Efficiency</span>
+                    <span className="text-slate-400 uppercase tracking-widest">Unit Marks</span>
                     <span className="text-navy-900">{sector.scores.unitMarks.toFixed(1)} / 10.0</span>
                   </div>
                   <div className="progress-thick">
@@ -131,7 +131,7 @@ export default function AdminDashboardContent({ sectors, totalUnits, totalReport
                   href={`/admin/sectors/${sector.id}`}
                   className="btn-primary w-full text-[10px] uppercase tracking-[0.3em] py-4 group/btn"
                 >
-                  Deep Intelligence <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                  View Details <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
                 </Link>
               </div>
             </ScaleIn>

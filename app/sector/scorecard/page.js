@@ -19,16 +19,18 @@ export default async function ScorecardPage() {
       }
     }
   });
+  
+  if (!user || !user.sector) redirect('/login');
 
   const sector = user.sector;
   const scores = calculateGraceMarks(sector);
 
   const breakdown = [
-    { name: 'Sector Core Meetings', points: 10, current: scores.sectorMarks, color: 'text-indigo-600', iconName: 'Star', status: 'Active' },
-    { name: 'Unit Execution Aggregate', points: 10, current: scores.unitMarks, color: 'text-emerald-500', iconName: 'Target', status: 'Active' },
-    { name: 'Organizational Audit', points: 25, current: 0, color: 'text-slate-300', iconName: 'ShieldCheck', status: 'Upcoming' },
-    { name: 'Program Execution', points: 30, current: 0, color: 'text-slate-300', iconName: 'Zap', status: 'Upcoming' },
-    { name: 'Governance Score', points: 20, current: 0, color: 'text-slate-300', iconName: 'Trophy', status: 'Upcoming' },
+    { name: 'Sector Meetings', points: 10, current: scores.sectorMarks, color: 'text-indigo-600', iconName: 'Star', status: 'Active' },
+    { name: 'Unit Meetings', points: 10, current: scores.unitMarks, color: 'text-emerald-500', iconName: 'Target', status: 'Active' },
+    { name: 'Organization', points: 25, current: 0, color: 'text-slate-300', iconName: 'ShieldCheck', status: 'Upcoming' },
+    { name: 'Programs', points: 30, current: 0, color: 'text-slate-300', iconName: 'Zap', status: 'Upcoming' },
+    { name: 'Grace Marks', points: 20, current: 0, color: 'text-slate-300', iconName: 'Trophy', status: 'Upcoming' },
   ];
 
   return <ScorecardContent scores={scores} breakdown={breakdown} />;

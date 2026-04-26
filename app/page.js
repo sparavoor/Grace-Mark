@@ -12,13 +12,13 @@ export default function Home() {
         <div className="text-center space-y-4 mb-20 px-4">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-navy-900 rounded-full text-[10px] font-semibold uppercase text-white tracking-[0.3em] mb-4 shadow-xl shadow-navy-900/20">
             <LayoutDashboard className="w-3 h-3 text-slate-blue" />
-            V4.0 Enterprise
+            Official Portal
           </div>
           <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-navy-900 leading-none">
             Grace Mark<span className="text-slate-blue opacity-50">.</span>
           </h1>
           <p className="max-w-xl mx-auto text-gray-500 font-normal md:text-xl md:leading-relaxed">
-            Revolutionizing performance tracking and organizational impact through automated scoring and real-time audit logs.
+            Submit and track marks for Sectors and Units under SSF Pulikkal Division.
           </p>
         </div>
 
@@ -29,12 +29,12 @@ export default function Home() {
               <div className="p-5 bg-navy-900 rounded-3xl mb-8 group-hover:scale-110 transition-transform">
                 <Shield className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-navy-900 mb-2">Division Access</h2>
+              <h2 className="text-2xl font-bold text-navy-900 mb-2">Division Login</h2>
               <p className="text-gray-400 text-sm font-normal mb-8 max-w-[200px]">
-                Manage sectors, schedule meetings, and audit global performance metrics.
+                Manage Sectors, Units, and view all report statistics.
               </p>
               <div className="mt-auto flex items-center gap-2 text-slate-blue font-semibold uppercase text-[10px] tracking-widest group-hover:gap-4 transition-all uppercase">
-                Enter Dashboard <ArrowRight className="w-3 h-3" />
+                Enter <ArrowRight className="w-3 h-3" />
               </div>
             </div>
           </Link>
@@ -45,9 +45,9 @@ export default function Home() {
               <div className="p-5 bg-slate-blue rounded-3xl mb-8 group-hover:scale-110 transition-transform shadow-lg shadow-slate-blue/20">
                 <Users className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-navy-900 mb-2">Sector Portal</h2>
+              <h2 className="text-2xl font-bold text-navy-900 mb-2">Sector Login</h2>
               <p className="text-gray-400 text-sm font-normal mb-8 max-w-[200px]">
-                Submit reports, track mark progress, and manage unit-level results.
+                Submit reports and check your current mark progress.
               </p>
               <div className="mt-auto flex items-center gap-2 text-navy-900 font-semibold uppercase text-[10px] tracking-widest group-hover:gap-4 transition-all uppercase">
                 Submit Report <ArrowRight className="w-3 h-3" />
@@ -58,11 +58,10 @@ export default function Home() {
 
         <div className="mt-20 pt-10 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6 px-4">
           <p className="text-[10px] font-medium uppercase text-gray-300 tracking-widest">
-            &copy; 2026 SSF Pulikkal Division. All rights reserved.
+            &copy; 2026 SSF Pulikkal Division.
           </p>
           <div className="flex gap-8">
-            <span className="text-[10px] font-bold text-gray-300 uppercase">System Status: Online</span>
-            <span className="text-[10px] font-bold text-gray-300 uppercase">Latency: 12ms</span>
+            <span className="text-[10px] font-bold text-gray-300 uppercase">Status: Online</span>
           </div>
         </div>
       </div>

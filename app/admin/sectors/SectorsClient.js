@@ -17,17 +17,17 @@ export default function SectorsClient({ initialSectors }) {
     const res = await createSector(formData);
     if (res?.error) setMsg(res.error);
     else {
-      setMsg('Sector node established successfully!');
+      setMsg('Sector added successfully!');
       e.target.reset();
       setIsDrawerOpen(false);
     }
   }
 
   async function handleDelete(id) {
-    if (!confirm('This will permanently decommission this sector node. Proceed?')) return;
+    if (!confirm('This will permanently delete this sector. Proceed?')) return;
     const res = await deleteSector(id);
     if (res?.error) setMsg(res.error);
-    else setMsg('Sector node decommissioned.');
+    else setMsg('Sector deleted.');
   }
 
   return (
@@ -35,16 +35,16 @@ export default function SectorsClient({ initialSectors }) {
       <FadeInUp className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-slate-200">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-navy-900 uppercase leading-none">
-            Sector <span className="text-brand-indigo">Network</span>
+            Sector <span className="text-brand-indigo">List</span>
           </h1>
-          <p className="text-slate-500 font-normal text-sm md:text-base mt-2">Manage primary organizational nodes and administrative access.</p>
+          <p className="text-slate-500 font-normal text-sm md:text-base mt-2">Manage sectores and login access.</p>
         </div>
         <button 
           onClick={() => setIsDrawerOpen(true)}
           className="btn-primary"
         >
           <Plus className="w-5 h-5 mr-1" />
-          <span>Provision Sector Node</span>
+          <span>Add Sector</span>
         </button>
       </FadeInUp>
 
@@ -63,12 +63,12 @@ export default function SectorsClient({ initialSectors }) {
             <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
               <Shield className="w-10 h-10 text-slate-200" />
             </div>
-            <p className="text-slate-400 font-normal uppercase tracking-widest text-xs mb-8">No active sector nodes discovered</p>
+            <p className="text-slate-400 font-normal uppercase tracking-widest text-xs mb-8">No sectors found</p>
             <button 
               onClick={() => setIsDrawerOpen(true)}
               className="btn-secondary text-[10px] font-semibold uppercase tracking-widest"
             >
-              Initialize Network Node
+              Add Your First Sector
             </button>
           </FadeInUp>
         )}
@@ -90,7 +90,7 @@ export default function SectorsClient({ initialSectors }) {
                 <h3 className="text-2xl font-bold text-navy-900 tracking-tight group-hover:text-brand-indigo transition-colors leading-tight uppercase mb-2">{sector.name}</h3>
                 <div className="flex items-center gap-2 text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">
                     <Target className="w-3.5 h-3.5 text-brand-emerald" />
-                    <span>Active Domain Node</span>
+                    <span>Sector Active</span>
                 </div>
             </div>
 
@@ -104,7 +104,7 @@ export default function SectorsClient({ initialSectors }) {
                   href={`/admin/sectors/${sector.id}`}
                   className="btn-primary w-full text-[10px] uppercase tracking-[0.3em] py-4 group/btn"
                 >
-                  Node Insight <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                  View Sector <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
                 </Link>
             </div>
             
@@ -118,34 +118,34 @@ export default function SectorsClient({ initialSectors }) {
       <Drawer 
         isOpen={isDrawerOpen} 
         onClose={() => setIsDrawerOpen(false)} 
-        title="NODE PROVISIONING"
+        title="ADD SECTOR"
       >
         <form onSubmit={handleSubmit} className="space-y-8 py-2">
           <div className="space-y-2">
-            <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Sector Designation</label>
-            <input name="name" type="text" placeholder="e.g. Northern Division" required className="input-standard text-lg font-normal uppercase tracking-tight" />
+            <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Sector Name</label>
+            <input name="name" type="text" placeholder="e.g. Kozhikode North" required className="input-standard text-lg font-normal uppercase tracking-tight" />
           </div>
 
           <div className="p-8 bg-slate-50/50 rounded-[12px] space-y-8 border border-slate-100 relative group/security shadow-inner">
             <div className="flex items-center gap-3 relative z-10">
               <div className="w-1.5 h-6 gradient-brand rounded-full shadow-sm" />
-              <h4 className="text-[10px] font-bold text-navy-900 uppercase tracking-[0.3em]">Access Encryption</h4>
+              <h4 className="text-[10px] font-bold text-navy-900 uppercase tracking-[0.3em]">Login Access</h4>
             </div>
             
             <div className="grid grid-cols-1 gap-6 relative z-10">
               <div className="space-y-2">
-                <label className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Node Identifier (Username)</label>
-                <input name="username" type="text" placeholder="sector_name" required className="input-standard py-4 font-normal shadow-sm" />
+                <label className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Login ID (Username)</label>
+                <input name="username" type="text" placeholder="sector_user" required className="input-standard py-4 font-normal shadow-sm" />
               </div>
               <div className="space-y-2">
-                <label className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Activation Code (Password)</label>
+                <label className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Login Password</label>
                 <input name="password" type="password" placeholder="••••••••" required className="input-standard py-4 font-normal shadow-sm" />
               </div>
             </div>
           </div>
 
           <button type="submit" className="btn-primary w-full py-5 text-[11px] font-semibold uppercase tracking-[0.4em] shadow-2xl">
-            Authorize & Establish Node
+            Create Sector
           </button>
         </form>
       </Drawer>

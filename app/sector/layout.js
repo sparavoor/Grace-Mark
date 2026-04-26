@@ -10,8 +10,7 @@ export default async function SectorLayout({ children }) {
   const navItems = [
     { name: 'Overview', href: '/sector/dashboard', icon: LayoutDashboard },
     { name: 'Submit Report', href: '/sector/report', icon: FileText },
-    { name: 'Submissions', href: '/sector/history', icon: Calendar },
-    { name: 'Scorecard', href: '/sector/scorecard', icon: ShieldCheck },
+    { name: 'Score card', href: '/sector/scorecard', icon: ShieldCheck },
   ];
 
   return (
@@ -26,12 +25,12 @@ export default async function SectorLayout({ children }) {
             <span className="text-xl font-bold tracking-tighter uppercase">Sector<span className="text-indigo-400 font-bold">Portal</span></span>
           </div>
         </div>
-        
+
         <nav className="flex-grow px-4 space-y-1">
           {navItems.map((item) => (
-            <Link 
-              key={item.href} 
-              href={item.href} 
+            <Link
+              key={item.href}
+              href={item.href}
               className="flex items-center gap-4 px-5 py-4 rounded-[10px] transition-all text-slate-400 hover:text-white hover:bg-white/5 font-medium group"
             >
               <item.icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -79,9 +78,9 @@ export default async function SectorLayout({ children }) {
       <div className="md:hidden handle-safe-area fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] z-50">
         <nav className="bg-navy-900 border border-white/10 rounded-[2rem] shadow-2xl flex justify-around items-center p-3">
           {navItems.map((item) => (
-            <Link 
-              key={item.href} 
-              href={item.href} 
+            <Link
+              key={item.href}
+              href={item.href}
               className="group flex flex-col items-center justify-center p-2 relative active:scale-90 transition-transform"
             >
               <item.icon className="w-6 h-6 text-slate-500 group-hover:text-white transition-colors" />

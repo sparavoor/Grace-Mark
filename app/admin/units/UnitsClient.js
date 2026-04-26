@@ -9,6 +9,9 @@ import { FadeInUp, ScaleIn, StaggerContainer } from '@/components/Animate';
 export default function UnitsClient({ initialUnits, initialSectors = [] }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [msg, setMsg] = useState('');
+  const [filterSector, setFilterSector] = useState('ALL');
+
+  const filteredUnits = initialUnits.filter(u => filterSector === 'ALL' || u.sectorId === filterSector);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -34,17 +37,27 @@ export default function UnitsClient({ initialUnits, initialSectors = [] }) {
       <FadeInUp className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-slate-200">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-navy-900 uppercase leading-none">
-            Unit <span className="text-brand-indigo">Inventory</span>
+            Unit <span className="text-brand-indigo">List</span>
           </h1>
-          <p className="text-slate-500 font-normal text-sm md:text-base mt-2">Classify and allocate regional unit bases to high-level sectors.</p>
+          <p className="text-slate-500 font-normal text-sm md:text-base mt-2">Manage units and assign them to sectors.</p>
         </div>
-        <button 
-          onClick={() => setIsDrawerOpen(true)}
-          className="btn-primary"
-        >
-          <Plus className="w-5 h-5 mr-1" />
-          <span>Provision Unit Base</span>
-        </button>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <select 
+            value={filterSector} 
+            onChange={(e) => setFilterSector(e.target.value)}
+            className="input-standard py-3 px-6 text-xs h-[52px] min-w-[200px] uppercase font-bold"
+          >
+            <option value="ALL">All Sectors</option>
+            {initialSectors.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <button 
+            onClick={() => setIsDrawerOpen(true)}
+            className="btn-primary"
+          >
+            <Plus className="w-5 h-5 mr-1" />
+            <span>Add New Unit</span>
+          </button>
+        </div>
       </FadeInUp>
 
       {msg && (
@@ -57,21 +70,21 @@ export default function UnitsClient({ initialUnits, initialSectors = [] }) {
 
       {/* Grid - Elevated Cards */}
       <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-        {initialUnits.length === 0 && (
+        {filteredUnits.length === 0 && (
           <FadeInUp className="col-span-full py-32 text-center card-premium border-dashed border-slate-200 flex flex-col items-center justify-center">
             <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
               <Network className="w-10 h-10 text-slate-200" />
             </div>
-            <p className="text-slate-400 font-normal uppercase tracking-widest text-xs mb-8">No active unit bases discovered</p>
+            <p className="text-slate-400 font-normal uppercase tracking-widest text-xs mb-8">No units found</p>
             <button 
               onClick={() => setIsDrawerOpen(true)}
               className="btn-secondary text-[10px] font-semibold uppercase tracking-widest"
             >
-              Start First Base Allocation
+              Create First Unit
             </button>
           </FadeInUp>
         )}
-        {initialUnits.map((unit, idx) => (
+        {filteredUnits.map((unit, idx) => (
           <ScaleIn key={unit.id} delay={idx * 0.05} className="card-premium flex flex-col group relative overflow-hidden h-full">
             <div className="flex justify-between items-start mb-8 relative z-10">
                 <div className="w-12 h-12 gradient-brand rounded-[12px] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
@@ -89,7 +102,7 @@ export default function UnitsClient({ initialUnits, initialSectors = [] }) {
                 <h3 className="text-2xl font-bold text-navy-900 tracking-tight group-hover:text-brand-indigo transition-colors leading-tight uppercase mb-2">{unit.name}</h3>
                 <div className="flex items-center gap-2 text-[10px] font-medium text-brand-emerald uppercase tracking-widest leading-none">
                     <Target className="w-3.5 h-3.5" />
-                    <span>Active Operational Base</span>
+                    <span>Active Unit</span>
                 </div>
             </div>
 
@@ -97,7 +110,7 @@ export default function UnitsClient({ initialUnits, initialSectors = [] }) {
                 <div className="p-4 bg-slate-50 rounded-[10px] border border-slate-100 flex items-center justify-between group-hover:bg-brand-light transition-colors">
                     <div className="flex items-center gap-3">
                         <Layers className="w-4 h-4 text-slate-300 group-hover:text-brand-indigo transition-colors" />
-                        <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400">Command Node</span>
+                        <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400">Sector</span>
                     </div>
                     <span className="text-[10px] font-semibold text-navy-900 uppercase tracking-widest">{unit.sector.name}</span>
                 </div>
@@ -113,20 +126,20 @@ export default function UnitsClient({ initialUnits, initialSectors = [] }) {
       <Drawer 
         isOpen={isDrawerOpen} 
         onClose={() => setIsDrawerOpen(false)} 
-        title="BASE ALLOCATION"
+        title="ADD NEW UNIT"
       >
         <form onSubmit={handleSubmit} className="space-y-8 py-2">
           <div className="space-y-2">
-            <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Base Designation</label>
+            <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Unit Name</label>
             <input name="name" type="text" placeholder="e.g. Alpha Unit" required className="input-standard text-lg font-normal uppercase tracking-tight" />
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Command Node Assignment</label>
+            <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Assign Sector</label>
             <select name="sectorId" required className="input-standard py-4 font-normal shadow-sm uppercase tracking-widest text-xs">
-              <option value="">-- Choose Target Sector --</option>
+              <option value="">-- Choose Sector --</option>
               {initialSectors.map(s => (
-                <option key={s.id} value={s.id}>{s.name} (OPERATIONAL)</option>
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
           </div>
@@ -137,14 +150,14 @@ export default function UnitsClient({ initialUnits, initialSectors = [] }) {
                     <Shield className="w-5 h-5 text-brand-indigo" />
                  </div>
                  <div>
-                    <h4 className="text-[10px] font-bold text-navy-900 uppercase tracking-[0.3em] mb-2">Protocol Insight</h4>
-                    <p className="text-[10px] text-slate-400 leading-relaxed font-normal">Establishing a new base node will enable granular reporting and aggregate mark derivation for the parent command node.</p>
+                    <h4 className="text-[10px] font-bold text-navy-900 uppercase tracking-[0.3em] mb-2">Information</h4>
+                    <p className="text-[10px] text-slate-400 leading-relaxed font-normal">Adding a new unit will allow them to submit reports and earn marks.</p>
                  </div>
              </div>
           </div>
 
           <button type="submit" className="btn-primary w-full py-5 text-[11px] font-semibold uppercase tracking-[0.4em] shadow-2xl">
-            Authorize & Allocate Base
+            Add Unit
           </button>
         </form>
       </Drawer>

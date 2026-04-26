@@ -43,9 +43,9 @@ export default function ReportClientForm({ activeMeetings, units }) {
     <div className="max-w-3xl mx-auto space-y-10 pb-10">
       <FadeInUp className="text-center space-y-3 pb-4">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-navy-900 uppercase leading-none">
-          {selectedGroup === 'SECTOR' ? 'Sector' : 'Base'} <span className="text-brand-indigo">Verification</span>
+          {selectedGroup === 'SECTOR' ? 'Sector' : 'Unit'} <span className="text-brand-indigo">Report</span>
         </h1>
-        <p className="text-slate-500 font-normal text-sm md:text-base">Document session execution to finalize your Grace Mark allocation.</p>
+        <p className="text-slate-500 font-normal text-sm md:text-base">Submit your report to get your marks.</p>
       </FadeInUp>
 
       <div className="card-premium">
@@ -66,7 +66,7 @@ export default function ReportClientForm({ activeMeetings, units }) {
               selectedGroup === 'SECTOR' ? 'bg-navy-900 text-white shadow-xl' : 'text-slate-500 hover:text-navy-900'
             }`}
           >
-            Sector Core Node
+            Sector Report
           </button>
           <button 
             onClick={() => setSelectedGroup('UNIT')}
@@ -74,16 +74,16 @@ export default function ReportClientForm({ activeMeetings, units }) {
               selectedGroup === 'UNIT' ? 'bg-navy-900 text-white shadow-xl' : 'text-slate-500 hover:text-navy-900'
             }`}
           >
-            Regional Base Node
+            Unit Report
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-3">
-              <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Verification Stream</label>
+              <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Select Meeting</label>
               <select name="meetingId" required className="input-standard py-4 font-normal shadow-sm uppercase tracking-widest text-xs">
-                <option value="">-- Choose active session --</option>
+                <option value="">-- Choose Meeting --</option>
                 {availableMeetings.map(m => (
                   <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
@@ -91,16 +91,16 @@ export default function ReportClientForm({ activeMeetings, units }) {
               {availableMeetings.length === 0 && (
                 <div className="flex items-center gap-2 mt-3 text-rose-500 text-[10px] font-medium uppercase tracking-widest">
                   <Info className="w-3.5 h-3.5" />
-                  <span>No active {selectedGroup.toLowerCase()} provisionings</span>
+                  <span>No active meetings found</span>
                 </div>
               )}
             </div>
 
             {selectedGroup === 'UNIT' ? (
               <div className="space-y-3 animate-fade-in">
-                <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Base Origin</label>
+                <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Select Unit</label>
                 <select name="unitId" required className="input-standard py-4 font-normal shadow-sm uppercase tracking-widest text-xs">
-                  <option value="">-- Choose Target Base --</option>
+                  <option value="">-- Choose Unit --</option>
                   {units.map(u => (
                     <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
@@ -108,9 +108,9 @@ export default function ReportClientForm({ activeMeetings, units }) {
               </div>
             ) : (
               <div className="space-y-3">
-                <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Authority Tier</label>
+                <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Type</label>
                 <div className="input-standard py-4 bg-slate-50 flex items-center font-medium text-slate-400 text-xs opacity-80 uppercase tracking-widest border-dashed">
-                  Primary Sector Core Hub
+                  Sector Level Report
                 </div>
               </div>
             )}
@@ -118,22 +118,22 @@ export default function ReportClientForm({ activeMeetings, units }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-3">
-              <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Personnel Capacity</label>
+              <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Attendance</label>
               <input 
                 name="attendanceCount" 
                 type="number" 
                 min="1" 
-                placeholder="Total verified count" 
+                placeholder="Total attendance" 
                 required 
                 className="input-standard py-4 font-normal shadow-sm"
               />
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Operational Venue</label>
+              <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Place / Venue</label>
               <input 
                 name="venue" 
                 type="text" 
-                placeholder="e.g. Regional Base HQ" 
+                placeholder="e.g. Sector Office" 
                 required 
                 className="input-standard py-4 font-normal shadow-sm"
               />
@@ -141,11 +141,11 @@ export default function ReportClientForm({ activeMeetings, units }) {
           </div>
 
           <div className="space-y-3">
-            <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Authorized Representative</label>
+            <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">Representative Name</label>
             <input 
               name="representativeName" 
               type="text" 
-              placeholder="Primary signatory name" 
+              placeholder="Enter name" 
               required 
               className="input-standard py-4 font-normal shadow-sm"
             />
@@ -154,7 +154,7 @@ export default function ReportClientForm({ activeMeetings, units }) {
           {/* Premium Performance Capture */}
           <div className="space-y-4">
             <label className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em]">
-              Performance Manifest {selectedGroup === 'SECTOR' && '(Optional)'}
+              Upload Minutes Photo
             </label>
             
             {!preview ? (
@@ -166,8 +166,8 @@ export default function ReportClientForm({ activeMeetings, units }) {
                   <Upload className="w-8 h-8 text-slate-300 group-hover:text-brand-indigo transition-colors" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-bold text-navy-900 uppercase tracking-tight">Provision Visual Evidence</p>
-                  <p className="text-[9px] text-slate-400 mt-2 uppercase font-medium tracking-[0.2em]">Support: JPG, PNG • Protocol Limit: 5MB</p>
+                  <p className="text-sm font-bold text-navy-900 uppercase tracking-tight">Select Photo from Gallery</p>
+                  <p className="text-[9px] text-slate-400 mt-2 uppercase font-medium tracking-[0.2em]">JPG or PNG (Max 5MB)</p>
                 </div>
               </div>
             ) : (
@@ -198,19 +198,19 @@ export default function ReportClientForm({ activeMeetings, units }) {
               type="file" 
               accept="image/*" 
               onChange={handleFileChange}
-              required={selectedGroup === 'UNIT'} 
+              required 
               className="hidden" 
             />
           </div>
 
           <div className="pt-10 border-t border-slate-100">
             <button type="submit" className="btn-primary w-full py-6 text-[12px] font-semibold uppercase tracking-[0.4em] shadow-2xl group">
-              Submit Marks For Audit <ArrowRight className="w-4 h-4 ml-3 group-hover:translate-x-1 transition-transform" />
+              Submit Report <ArrowRight className="w-4 h-4 ml-3 group-hover:translate-x-1 transition-transform" />
             </button>
             <div className="mt-6 flex items-center justify-center gap-3">
               <div className="w-2 h-2 bg-brand-emerald rounded-full animate-pulse" />
               <p className="text-[9px] text-slate-400 uppercase font-normal tracking-widest">
-                Authorized Node submission contributes to aggregate marks
+                Submitted reports will be verified by the Division.
               </p>
             </div>
           </div>

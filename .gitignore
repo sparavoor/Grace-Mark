@@ -32,5 +32,11 @@ yarn-error.log*
 # prisma
 /prisma/dev.db
 
+# scratch
+/scratch
+
+# uploads
+/public/uploads
+
 # vercel
 .vercel

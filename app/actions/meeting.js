@@ -3,6 +3,8 @@
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
+import fs from 'fs/promises';
+import path from 'path';
 
 export async function createMeeting(formData) {
   const session = await getSession();
@@ -52,8 +54,17 @@ export async function submitReport(formData) {
   const venue = formData.get('venue');
   const representativeName = formData.get('representativeName');
   
-  // Handwave image upload for now
-  const minutesImagePath = `/uploads/fake-${Date.now()}.png`;
+  let minutesImagePath = null;
+  const photo = formData.get('photo');
+  if (photo && photo.size > 0) {
+    const fileName = `${Date.now()}-${photo.name.replace(/\s+/g, '-')}`;
+    const filePath = path.join(process.cwd(), 'public', 'uploads', fileName);
+    
+    // Save the file
+    const buffer = Buffer.from(await photo.arrayBuffer());
+    await fs.writeFile(filePath, buffer);
+    minutesImagePath = `/uploads/${fileName}`;
+  }
 
   if (!meetingId || isNaN(attendanceCount) || !representativeName) {
     return { error: 'Missing fields' };
@@ -84,6 +95,19 @@ export async function submitReport(formData) {
     const now = new Date();
     if (now > meeting.endDate) {
       return { error: 'Reporting for this meeting has expired' };
+    }
+
+    // Check for duplicate
+    const existingReport = await prisma.meetingReport.findFirst({
+      where: {
+        meetingId,
+        sectorId,
+        unitId: unitId || null
+      }
+    });
+
+    if (existingReport) {
+      return { error: 'A report for this meeting has already been submitted.' };
     }
 
     await prisma.meetingReport.create({
