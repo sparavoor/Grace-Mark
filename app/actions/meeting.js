@@ -137,8 +137,8 @@ export async function submitReport(formData) {
     revalidatePath('/sector/report');
     return { success: true };
   } catch (e) {
-    console.error(e);
-    return { error: 'Report might already exist or invalid data.' };
+    console.error('CRITICAL_ERROR: Report submission failed:', e);
+    return { error: `Submission failed: ${e.message || 'Unknown server error'}` };
   }
 }
 

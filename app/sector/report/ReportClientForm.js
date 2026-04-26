@@ -11,17 +11,27 @@ export default function ReportClientForm({ activeMeetings, units }) {
   const [preview, setPreview] = useState(null);
   const fileInputRef = useRef(null);
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const availableMeetings = activeMeetings.filter(m => m.targetGroup === selectedGroup);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const formData = new FormData(e.target);
-    const res = await submitReport(formData);
-    if (res?.error) setMsg(res.error);
-    else {
-      setMsg('Report submitted successfully!');
-      setPreview(null);
-      e.target.reset();
+    setIsLoading(true);
+    setMsg('');
+    try {
+      const formData = new FormData(e.target);
+      const res = await submitReport(formData);
+      if (res?.error) setMsg(res.error);
+      else {
+        setMsg('Report submitted successfully!');
+        setPreview(null);
+        e.target.reset();
+      }
+    } catch (err) {
+      setMsg('A connection error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -204,8 +214,13 @@ export default function ReportClientForm({ activeMeetings, units }) {
           </div>
 
           <div className="pt-10 border-t border-slate-100">
-            <button type="submit" className="btn-primary w-full py-6 text-[12px] font-semibold uppercase tracking-[0.4em] shadow-2xl group">
-              Submit Report <ArrowRight className="w-4 h-4 ml-3 group-hover:translate-x-1 transition-transform" />
+            <button 
+              type="submit" 
+              disabled={isLoading}
+              className="btn-primary w-full py-6 text-[12px] font-semibold uppercase tracking-[0.4em] shadow-2xl group disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Submitting Report...' : 'Submit Report'} 
+              {!isLoading && <ArrowRight className="w-4 h-4 ml-3 group-hover:translate-x-1 transition-transform" />}
             </button>
             <div className="mt-6 flex items-center justify-center gap-3">
               <div className="w-2 h-2 bg-brand-emerald rounded-full animate-pulse" />
