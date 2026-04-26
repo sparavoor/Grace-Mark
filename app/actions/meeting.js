@@ -3,8 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
-import fs from 'fs/promises';
-import path from 'path';
+import cloudinary from '@/lib/cloudinary';
 
 export async function createMeeting(formData) {
   const session = await getSession();
@@ -57,13 +56,25 @@ export async function submitReport(formData) {
   let minutesImagePath = null;
   const photo = formData.get('photo');
   if (photo && photo.size > 0) {
-    const fileName = `${Date.now()}-${photo.name.replace(/\s+/g, '-')}`;
-    const filePath = path.join(process.cwd(), 'public', 'uploads', fileName);
+    const arrayBuffer = await photo.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     
-    // Save the file
-    const buffer = Buffer.from(await photo.arrayBuffer());
-    await fs.writeFile(filePath, buffer);
-    minutesImagePath = `/uploads/${fileName}`;
+    // Upload to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'grace-mark-reports',
+          resource_type: 'auto',
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      uploadStream.end(buffer);
+    });
+    
+    minutesImagePath = result.secure_url;
   }
 
   if (!meetingId || isNaN(attendanceCount) || !representativeName) {
