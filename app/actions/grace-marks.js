@@ -191,30 +191,38 @@ export async function submitSectorGraceMarks(criteriaId, percentage, isTicked, u
   }
 
   try {
-    await prisma.graceMarkSubmission.upsert({
+    // Avoid upsert since unitId can be null, which is not supported in the where clause of some upserts
+    const existing = await prisma.graceMarkSubmission.findFirst({
       where: {
-        sectorId_criteriaId_unitId: {
-          sectorId,
-          criteriaId,
-          unitId: unitId || null
-        }
-      },
-      create: {
         sectorId,
         criteriaId,
-        unitId: unitId || null,
-        percentage: pctValue,
-        marks,
-        isTicked,
-        textAnswer
-      },
-      update: {
-        percentage: pctValue,
-        marks,
-        isTicked,
-        textAnswer
+        unitId: unitId || null
       }
     });
+
+    if (existing) {
+      await prisma.graceMarkSubmission.update({
+        where: { id: existing.id },
+        data: {
+          percentage: pctValue,
+          marks,
+          isTicked,
+          textAnswer
+        }
+      });
+    } else {
+      await prisma.graceMarkSubmission.create({
+        data: {
+          sectorId,
+          criteriaId,
+          unitId: unitId || null,
+          percentage: pctValue,
+          marks,
+          isTicked,
+          textAnswer
+        }
+      });
+    }
 
     revalidatePath('/sector/grace-marks');
     revalidatePath('/sector/scorecard');
