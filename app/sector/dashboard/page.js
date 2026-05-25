@@ -16,14 +16,24 @@ export default async function SectorDashboard() {
           units: true,
           reports: {
             include: { meeting: true }
+          },
+          graceMarkSubmissions: {
+            include: { criteria: true }
           }
         }
       }
     }
   });
 
+  if (!user || !user.sector) redirect('/login');
+
   const sector = user.sector;
-  const scores = calculateGraceMarks(sector);
+
+  const activeShineCriteriaCount = await prisma.graceMarkCriteria.count({
+    where: { isActive: true, type: 'SHINE_SECTOR' }
+  });
+
+  const scores = calculateGraceMarks(sector, activeShineCriteriaCount);
 
   return <DashboardContent sector={sector} scores={scores} />;
 }

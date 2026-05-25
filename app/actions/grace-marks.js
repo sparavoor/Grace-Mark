@@ -5,7 +5,7 @@ import { getSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 
 // Calculate marks on server side to avoid manipulation
-function calculateMarksForType(type, percentage, targetSteps = null, shineType = 'TICK') {
+function calculateMarksForType(type, percentage, targetSteps = null, shineType = 'TICK', activeShineCriteriaCount = 1) {
   const pct = parseFloat(percentage) || 0;
   
   if (type === 'UNIT_SAHITYOTSAV') {
@@ -26,17 +26,20 @@ function calculateMarksForType(type, percentage, targetSteps = null, shineType =
   }
   
   if (type === 'SHINE_SECTOR') {
+    const count = activeShineCriteriaCount > 0 ? activeShineCriteriaCount : 1;
+    const marksPerCriteria = 20 / count;
+
     const st = shineType || 'TICK';
     if (st === 'TICK' || st === 'TEXT') {
-      return 20;
+      return marksPerCriteria;
     }
     if (st === 'NUMBER') {
       if (targetSteps && targetSteps > 0) {
-        return pct >= targetSteps ? 20 : 0;
+        return pct >= targetSteps ? marksPerCriteria : 0;
       }
-      return parseFloat(((pct / 100) * 20).toFixed(2));
+      return parseFloat(((pct / 100) * marksPerCriteria).toFixed(2));
     }
-    return parseFloat(((pct / 100) * 20).toFixed(2));
+    return parseFloat(((pct / 100) * marksPerCriteria).toFixed(2));
   }
   
   return 0;
@@ -174,8 +177,18 @@ export async function submitSectorGraceMarks(criteriaId, percentage, isTicked, u
     return { error: 'Value completed must be positive' };
   }
 
-  // Calculate the correct marks based on criteria rules, target steps, and shineType
-  const marks = isTicked ? calculateMarksForType(criteria.type, pctValue, criteria.targetSteps, criteria.shineType) : 0;
+  // Calculate the correct marks based on criteria rules, target steps, and shineType count
+  let marks = 0;
+  if (isTicked) {
+    if (criteria.type === 'SHINE_SECTOR') {
+      const activeShineCriteriaCount = await prisma.graceMarkCriteria.count({
+        where: { isActive: true, type: 'SHINE_SECTOR' }
+      });
+      marks = calculateMarksForType(criteria.type, pctValue, criteria.targetSteps, criteria.shineType, activeShineCriteriaCount);
+    } else {
+      marks = calculateMarksForType(criteria.type, pctValue, criteria.targetSteps, criteria.shineType, 1);
+    }
+  }
 
   try {
     await prisma.graceMarkSubmission.upsert({

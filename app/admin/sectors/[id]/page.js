@@ -43,7 +43,11 @@ export default async function SectorDetailPage({ params }) {
 
   if (!sector) redirect('/admin/sectors');
 
-  const scores = calculateGraceMarks(sector);
+  const activeShineCriteriaCount = await prisma.graceMarkCriteria.count({
+    where: { isActive: true, type: 'SHINE_SECTOR' }
+  });
+
+  const scores = calculateGraceMarks(sector, activeShineCriteriaCount);
 
   return (
     <div className="space-y-10 md:space-y-16">

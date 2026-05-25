@@ -22,8 +22,10 @@ export default async function GraceMarksAdminPage() {
     }
   });
 
+  const activeShineCriteriaCount = criteria.filter(c => c.isActive && c.type === 'SHINE_SECTOR').length;
+
   const sectorScores = sectors.map(sector => {
-    const scores = calculateGraceMarks(sector);
+    const scores = calculateGraceMarks(sector, activeShineCriteriaCount);
     return {
       id: sector.id,
       name: sector.name,

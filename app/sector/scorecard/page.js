@@ -26,7 +26,12 @@ export default async function ScorecardPage() {
   if (!user || !user.sector) redirect('/login');
 
   const sector = user.sector;
-  const scores = calculateGraceMarks(sector);
+  
+  const activeShineCriteriaCount = await prisma.graceMarkCriteria.count({
+    where: { isActive: true, type: 'SHINE_SECTOR' }
+  });
+
+  const scores = calculateGraceMarks(sector, activeShineCriteriaCount);
 
   const breakdown = [
     { name: 'Sector Meetings', points: 10, current: scores.sectorMarks, color: 'text-indigo-600', iconName: 'Star', status: 'Active' },

@@ -22,9 +22,13 @@ export default async function AdminDashboard() {
     }
   });
 
+  const activeShineCriteriaCount = await prisma.graceMarkCriteria.count({
+    where: { isActive: true, type: 'SHINE_SECTOR' }
+  });
+
   const sectorScores = sectors.map(s => ({
     ...s,
-    scores: calculateGraceMarks(s)
+    scores: calculateGraceMarks(s, activeShineCriteriaCount)
   }));
 
   const totalUnits = sectors.reduce((acc, s) => acc + s.units.length, 0);
