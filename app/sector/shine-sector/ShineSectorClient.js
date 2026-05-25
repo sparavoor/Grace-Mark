@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Trophy, Check, ShieldAlert, Award, HelpCircle, Save } from 'lucide-react';
+import { Trophy, Check, ShieldAlert, Award, HelpCircle, Save, Star } from 'lucide-react';
 import { FadeInUp, ScaleIn, StaggerContainer } from '@/components/Animate';
 import { submitSectorGraceMarks } from '@/app/actions/grace-marks';
 
@@ -34,15 +34,18 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
     return states;
   });
 
-  function getMarksForPercentage(percentage) {
+  function getMarksForPercentage(percentage, targetSteps = null) {
     const pct = parseFloat(percentage) || 0;
+    if (targetSteps && targetSteps > 0) {
+      return pct >= targetSteps ? 20 : 0;
+    }
     return parseFloat(((pct / 100) * 20).toFixed(2));
   }
 
   function calculateCriteriaLiveMarks(criteriaItem) {
     const state = formStates[`${criteriaItem.id}_sector`];
     if (state && state.isTicked) {
-      return getMarksForPercentage(state.percentage);
+      return getMarksForPercentage(state.percentage, criteriaItem.targetSteps);
     }
     return 0;
   }
@@ -89,7 +92,7 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-navy-900 uppercase">
             Shine <span className="text-amber-500 font-bold">Sector</span>
           </h1>
-          <p className="text-slate-500 font-normal text-sm mt-1">Claim Shine Sector progress to earn proportionally scaled sector marks.</p>
+          <p className="text-slate-500 font-normal text-sm mt-1">Claim Shine Sector progress to earn proportionally scaled or threshold-based sector marks.</p>
         </div>
         <div className="flex items-center gap-3 px-6 py-3 bg-navy-900 border border-slate-800 rounded-[10px] text-white font-semibold text-xs shadow-xl shadow-navy-900/20">
           <Trophy className="w-4 h-4 text-amber-400" />
@@ -109,6 +112,8 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
             const criteriaLiveMarks = calculateCriteriaLiveMarks(item);
             const stateKey = `${item.id}_sector`;
             const state = formStates[stateKey] || { percentage: 0, isTicked: false, saving: false, error: '', success: '' };
+            const hasTarget = item.targetSteps !== null && item.targetSteps > 0;
+            const targetReached = hasTarget && state.percentage >= item.targetSteps;
 
             return (
               <ScaleIn key={item.id} className="card-premium flex flex-col justify-between relative overflow-hidden group w-full">
@@ -116,15 +121,25 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="space-y-1.5">
                       <h3 className="text-xl font-bold text-navy-900 uppercase tracking-tight leading-none">{item.name}</h3>
-                      <span className="text-[9px] px-2.5 py-1 rounded bg-amber-50 text-amber-600 font-semibold uppercase tracking-wider border border-amber-100">
-                        Shine Sector
-                      </span>
+                      <div className="flex gap-2 items-center flex-wrap pt-1">
+                        <span className="text-[9px] px-2.5 py-1 rounded bg-amber-50 text-amber-600 font-semibold uppercase tracking-wider border border-amber-100">
+                          Shine Sector
+                        </span>
+                        {hasTarget && (
+                          <span className="text-[9px] px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 font-bold uppercase tracking-wider border border-indigo-100 flex items-center gap-1">
+                            <Star className="w-3 h-3 text-indigo-500 fill-indigo-500 shrink-0" />
+                            Target: {item.targetSteps} Steps
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-4">
                       <div className="px-4 py-2 bg-amber-50/50 border border-amber-100 rounded-lg text-right shrink-0">
-                        <span className="text-sm font-bold text-amber-700 leading-none">{state.isTicked ? state.percentage : 0}%</span>
-                        <span className="text-[10px] text-slate-500 font-medium"> Progress</span>
+                        <span className="text-sm font-bold text-amber-700 leading-none">
+                          {state.isTicked ? state.percentage : 0}{hasTarget ? ' Steps' : '%'}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-medium"> Reported</span>
                       </div>
                       <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-right shrink-0">
                         <span className="text-lg font-bold text-navy-900 leading-none">{criteriaLiveMarks.toFixed(1)}</span>
@@ -142,9 +157,15 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
                       <HelpCircle className="w-3.5 h-3.5 text-indigo-600" />
                       Grading Standard
                     </h4>
-                    <p className="text-[10px] font-semibold text-indigo-600 uppercase leading-none">
-                      Proportional scoring! Completing 100% gives 20 marks. Progress gives linear marks.
-                    </p>
+                    {hasTarget ? (
+                      <p className="text-[10px] font-semibold text-indigo-600 uppercase leading-none">
+                        Goal-based scoring! Reach or exceed <span className="font-bold text-indigo-800">{item.targetSteps} steps</span> to unlock the full <span className="font-bold text-indigo-800">20.0 grace marks</span>. Below {item.targetSteps} steps yields 0 marks.
+                      </p>
+                    ) : (
+                      <p className="text-[10px] font-semibold text-indigo-600 uppercase leading-none">
+                        Proportional scoring! Completing 100% gives 20 marks. Progress gives linear marks.
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-6 pt-4 border-t border-slate-100">
@@ -162,35 +183,74 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
                     </div>
 
                     {state.isTicked && (
-                      <div className="space-y-3 animate-fade-in">
-                        <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                          <span>Completed Percentage</span>
-                          <span className="text-navy-900 text-sm font-bold bg-white px-2.5 py-1 border border-slate-200 rounded-lg">{state.percentage}%</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                          <input 
-                            type="range" 
-                            min="0" 
-                            max="100" 
-                            value={state.percentage}
-                            onChange={(e) => updateFormState(stateKey, { percentage: parseInt(e.target.value) })}
-                            className="flex-grow h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                          />
-                          <input 
-                            type="number" 
-                            min="0" 
-                            max="100"
-                            value={state.percentage}
-                            onChange={(e) => {
-                              let val = parseInt(e.target.value) || 0;
-                              if (val < 0) val = 0;
-                              if (val > 100) val = 100;
-                              updateFormState(stateKey, { percentage: val });
-                            }}
-                            className="w-16 px-2 py-1.5 border border-slate-200 rounded-xl text-center text-sm focus:outline-none focus:border-indigo-600 font-bold"
-                          />
-                        </div>
+                      <div className="space-y-4 animate-fade-in">
+                        {hasTarget ? (
+                          <div className="space-y-3 p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                              <span>Completed Steps Taken</span>
+                              <div className="flex items-center gap-2">
+                                {targetReached ? (
+                                  <span className="text-[9px] px-2 py-1 rounded bg-emerald-50 text-emerald-600 font-bold border border-emerald-100">
+                                    🏆 TARGET REACHED
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] px-2 py-1 rounded bg-rose-50 text-rose-600 font-bold border border-rose-100">
+                                    ❌ BELOW TARGET
+                                  </span>
+                                )}
+                                <span className="text-navy-900 text-sm font-bold bg-white px-2.5 py-1 border border-slate-200 rounded-lg">
+                                  {state.percentage} / {item.targetSteps} Steps
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-4 pt-2">
+                              <input 
+                                type="number" 
+                                min="0" 
+                                value={state.percentage}
+                                onChange={(e) => {
+                                  let val = parseInt(e.target.value) || 0;
+                                  if (val < 0) val = 0;
+                                  updateFormState(stateKey, { percentage: val });
+                                }}
+                                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-center text-base focus:outline-none focus:border-indigo-600 font-bold bg-white"
+                                placeholder="Enter steps completed"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                              <span>Completed Percentage</span>
+                              <span className="text-navy-900 text-sm font-bold bg-white px-2.5 py-1 border border-slate-200 rounded-lg">{state.percentage}%</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-4">
+                              <input 
+                                type="range" 
+                                min="0" 
+                                max="100" 
+                                value={state.percentage}
+                                onChange={(e) => updateFormState(stateKey, { percentage: parseInt(e.target.value) })}
+                                className="flex-grow h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                              />
+                              <input 
+                                type="number" 
+                                min="0" 
+                                max="100"
+                                value={state.percentage}
+                                onChange={(e) => {
+                                  let val = parseInt(e.target.value) || 0;
+                                  if (val < 0) val = 0;
+                                  if (val > 100) val = 100;
+                                  updateFormState(stateKey, { percentage: val });
+                                }}
+                                className="w-16 px-2 py-1.5 border border-slate-200 rounded-xl text-center text-sm focus:outline-none focus:border-indigo-600 font-bold"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 

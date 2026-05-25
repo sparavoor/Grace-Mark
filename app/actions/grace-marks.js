@@ -5,7 +5,7 @@ import { getSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 
 // Calculate marks on server side to avoid manipulation
-function calculateMarksForType(type, percentage) {
+function calculateMarksForType(type, percentage, targetSteps = null) {
   const pct = parseFloat(percentage) || 0;
   
   if (type === 'UNIT_SAHITYOTSAV') {
@@ -26,6 +26,9 @@ function calculateMarksForType(type, percentage) {
   }
   
   if (type === 'SHINE_SECTOR') {
+    if (targetSteps && targetSteps > 0) {
+      return pct >= targetSteps ? 20 : 0;
+    }
     // Proportional up to 20 marks for 100% completed
     return parseFloat(((pct / 100) * 20).toFixed(2));
   }
@@ -42,6 +45,8 @@ export async function createGraceMarkCriteria(formData) {
   const type = formData.get('type');
   const description = formData.get('description');
   const isActive = formData.get('isActive') === 'true';
+  const targetStepsRaw = formData.get('targetSteps');
+  const targetSteps = targetStepsRaw ? parseInt(targetStepsRaw) || null : null;
 
   if (!name || !type) return { error: 'Name and Type are required' };
 
@@ -51,7 +56,8 @@ export async function createGraceMarkCriteria(formData) {
         name,
         type,
         description,
-        isActive
+        isActive,
+        targetSteps
       }
     });
 
@@ -107,6 +113,8 @@ export async function updateGraceMarkCriteria(id, formData) {
   const type = formData.get('type');
   const description = formData.get('description');
   const isActive = formData.get('isActive') === 'true';
+  const targetStepsRaw = formData.get('targetSteps');
+  const targetSteps = targetStepsRaw ? parseInt(targetStepsRaw) || null : null;
 
   if (!name || !type) return { error: 'Name and Type are required' };
 
@@ -117,7 +125,8 @@ export async function updateGraceMarkCriteria(id, formData) {
         name,
         type,
         description,
-        isActive
+        isActive,
+        targetSteps
       }
     });
 
@@ -151,12 +160,12 @@ export async function submitSectorGraceMarks(criteriaId, percentage, isTicked, u
   if (!criteria.isActive) return { error: 'Criteria is not active' };
 
   const pctValue = parseFloat(percentage);
-  if (isNaN(pctValue) || pctValue < 0 || pctValue > 100) {
-    return { error: 'Percentage completed must be between 0 and 100' };
+  if (isNaN(pctValue) || pctValue < 0) {
+    return { error: 'Value completed must be positive' };
   }
 
-  // Calculate the correct marks based on criteria rules
-  const marks = isTicked ? calculateMarksForType(criteria.type, pctValue) : 0;
+  // Calculate the correct marks based on criteria rules and target steps
+  const marks = isTicked ? calculateMarksForType(criteria.type, pctValue, criteria.targetSteps) : 0;
 
   try {
     await prisma.graceMarkSubmission.upsert({

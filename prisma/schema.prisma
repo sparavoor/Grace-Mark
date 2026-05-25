@@ -78,6 +78,7 @@ model GraceMarkCriteria {
   name        String
   description String?
   isActive    Boolean                @default(true)
+  targetSteps Int?                   // Number of steps required specifically for SHINE_SECTOR criteria
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @updatedAt
   submissions GraceMarkSubmission[]
