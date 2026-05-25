@@ -5,7 +5,7 @@ import { getSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 
 // Calculate marks on server side to avoid manipulation
-function calculateMarksForType(type, percentage, targetSteps = null) {
+function calculateMarksForType(type, percentage, targetSteps = null, shineType = 'TICK') {
   const pct = parseFloat(percentage) || 0;
   
   if (type === 'UNIT_SAHITYOTSAV') {
@@ -26,10 +26,16 @@ function calculateMarksForType(type, percentage, targetSteps = null) {
   }
   
   if (type === 'SHINE_SECTOR') {
-    if (targetSteps && targetSteps > 0) {
-      return pct >= targetSteps ? 20 : 0;
+    const st = shineType || 'TICK';
+    if (st === 'TICK' || st === 'TEXT') {
+      return 20;
     }
-    // Proportional up to 20 marks for 100% completed
+    if (st === 'NUMBER') {
+      if (targetSteps && targetSteps > 0) {
+        return pct >= targetSteps ? 20 : 0;
+      }
+      return parseFloat(((pct / 100) * 20).toFixed(2));
+    }
     return parseFloat(((pct / 100) * 20).toFixed(2));
   }
   
@@ -47,6 +53,7 @@ export async function createGraceMarkCriteria(formData) {
   const isActive = formData.get('isActive') === 'true';
   const targetStepsRaw = formData.get('targetSteps');
   const targetSteps = targetStepsRaw ? parseInt(targetStepsRaw) || null : null;
+  const shineType = formData.get('shineType') || 'TICK';
 
   if (!name || !type) return { error: 'Name and Type are required' };
 
@@ -57,7 +64,8 @@ export async function createGraceMarkCriteria(formData) {
         type,
         description,
         isActive,
-        targetSteps
+        targetSteps,
+        shineType
       }
     });
 
@@ -115,6 +123,7 @@ export async function updateGraceMarkCriteria(id, formData) {
   const isActive = formData.get('isActive') === 'true';
   const targetStepsRaw = formData.get('targetSteps');
   const targetSteps = targetStepsRaw ? parseInt(targetStepsRaw) || null : null;
+  const shineType = formData.get('shineType') || 'TICK';
 
   if (!name || !type) return { error: 'Name and Type are required' };
 
@@ -126,7 +135,8 @@ export async function updateGraceMarkCriteria(id, formData) {
         type,
         description,
         isActive,
-        targetSteps
+        targetSteps,
+        shineType
       }
     });
 
@@ -137,8 +147,8 @@ export async function updateGraceMarkCriteria(id, formData) {
   }
 }
 
-// Sector Action: Submit or Update Grace Marks Percentage & Checklist Tick
-export async function submitSectorGraceMarks(criteriaId, percentage, isTicked, unitId = null) {
+// Sector Action: Submit or Update Grace Marks Percentage & Checklist Tick & Short Answer
+export async function submitSectorGraceMarks(criteriaId, percentage, isTicked, unitId = null, textAnswer = null) {
   const session = await getSession();
   if (!session || session.role !== 'SECTOR') return { error: 'Unauthorized' };
 
@@ -164,8 +174,8 @@ export async function submitSectorGraceMarks(criteriaId, percentage, isTicked, u
     return { error: 'Value completed must be positive' };
   }
 
-  // Calculate the correct marks based on criteria rules and target steps
-  const marks = isTicked ? calculateMarksForType(criteria.type, pctValue, criteria.targetSteps) : 0;
+  // Calculate the correct marks based on criteria rules, target steps, and shineType
+  const marks = isTicked ? calculateMarksForType(criteria.type, pctValue, criteria.targetSteps, criteria.shineType) : 0;
 
   try {
     await prisma.graceMarkSubmission.upsert({
@@ -182,12 +192,14 @@ export async function submitSectorGraceMarks(criteriaId, percentage, isTicked, u
         unitId: unitId || null,
         percentage: pctValue,
         marks,
-        isTicked
+        isTicked,
+        textAnswer
       },
       update: {
         percentage: pctValue,
         marks,
-        isTicked
+        isTicked,
+        textAnswer
       }
     });
 

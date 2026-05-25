@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Trophy, Plus, Check, X, ShieldAlert, Award, FileText, ToggleLeft, ToggleRight, Trash2, Pencil, RotateCcw } from 'lucide-react';
+import { Trophy, Plus, Check, X, ShieldAlert, Award, FileText, ToggleLeft, ToggleRight, Trash2, Pencil, RotateCcw, HelpCircle } from 'lucide-react';
 import { FadeInUp, ScaleIn, StaggerContainer } from '@/components/Animate';
 import { createGraceMarkCriteria, toggleGraceMarkCriteria, deleteGraceMarkCriteria, updateGraceMarkCriteria } from '@/app/actions/grace-marks';
 
@@ -11,6 +11,7 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
   const [type, setType] = useState('UNIT_SAHITYOTSAV');
   const [description, setDescription] = useState('');
   const [targetSteps, setTargetSteps] = useState('');
+  const [shineType, setShineType] = useState('TICK');
   const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -28,7 +29,8 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
     formData.append('type', type);
     formData.append('description', description);
     formData.append('isActive', isActive ? 'true' : 'false');
-    if (type === 'SHINE_SECTOR' && targetSteps !== '') {
+    formData.append('shineType', type === 'SHINE_SECTOR' ? shineType : 'TICK');
+    if (type === 'SHINE_SECTOR' && shineType === 'NUMBER' && targetSteps !== '') {
       formData.append('targetSteps', targetSteps);
     } else {
       formData.append('targetSteps', '');
@@ -65,6 +67,7 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
     setType(item.type);
     setDescription(item.description || '');
     setIsActive(item.isActive);
+    setShineType(item.shineType || 'TICK');
     setTargetSteps(item.targetSteps !== null && item.targetSteps !== undefined ? String(item.targetSteps) : '');
   }
 
@@ -74,6 +77,7 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
     setType('UNIT_SAHITYOTSAV');
     setDescription('');
     setTargetSteps('');
+    setShineType('TICK');
     setIsActive(true);
   }
 
@@ -113,6 +117,12 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
     UNIT_SAHITYOTSAV: 'Unit Sahityotsav',
     BRIGHT_UNIT_SAHITYOTSAV: 'Bright Unit Sahityotsav',
     SHINE_SECTOR: 'Shine Sector'
+  };
+
+  const shineTypeLabels = {
+    TICK: 'Simple Checkbox Tick',
+    NUMBER: 'Number Input (Steps)',
+    TEXT: 'Short Answer Input'
   };
 
   const typeMaxMarks = {
@@ -167,7 +177,7 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
                   type="text" 
                   value={name} 
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Unit Sahityotsav 2026" 
+                  placeholder="e.g. Shine Sector Program" 
                   className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-600 font-medium"
                   required
                 />
@@ -187,19 +197,34 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
               </div>
 
               {type === 'SHINE_SECTOR' && (
-                <div className="animate-fade-in p-4 bg-amber-50/50 border border-amber-100 rounded-2xl space-y-3">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-amber-800 mb-1">Target Steps Required (Optional)</label>
-                  <p className="text-[10px] text-slate-500 font-normal leading-normal">
-                    Set a minimum target number of steps. If a target is set, sectors will only receive their 20 marks when they reach or exceed this step count. Leave empty for normal proportional scaling.
-                  </p>
-                  <input 
-                    type="number" 
-                    min="0"
-                    placeholder="e.g. 5"
-                    value={targetSteps} 
-                    onChange={(e) => setTargetSteps(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-amber-200 rounded-xl text-sm focus:outline-none focus:border-amber-600 font-bold bg-white text-navy-900"
-                  />
+                <div className="animate-fade-in p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-navy-800 mb-2">Shine Sector Mode</label>
+                    <select 
+                      value={shineType} 
+                      onChange={(e) => setShineType(e.target.value)}
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-600 font-medium bg-white text-navy-900"
+                    >
+                      <option value="TICK">Simple Checkbox Tick (Get 20 Marks)</option>
+                      <option value="NUMBER">Number Input - Steps Goal (Threshold-based)</option>
+                      <option value="TEXT">Short Answer text Input (Get 20 Marks)</option>
+                    </select>
+                  </div>
+
+                  {shineType === 'NUMBER' && (
+                    <div className="animate-fade-in space-y-2">
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-amber-800 mb-1">Target Steps Required</label>
+                      <input 
+                        type="number" 
+                        min="1"
+                        placeholder="e.g. 5"
+                        value={targetSteps} 
+                        onChange={(e) => setTargetSteps(e.target.value)}
+                        className="w-full px-4 py-2.5 border border-amber-200 rounded-xl text-sm focus:outline-none focus:border-amber-600 font-bold bg-white text-navy-900"
+                        required={shineType === 'NUMBER'}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -276,7 +301,12 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
                         <span className="text-[9px] px-2.5 py-1 rounded bg-indigo-50 text-indigo-600 font-semibold uppercase tracking-wider border border-indigo-100">
                           {typeLabels[item.type]}
                         </span>
-                        {item.type === 'SHINE_SECTOR' && item.targetSteps !== null && (
+                        {item.type === 'SHINE_SECTOR' && (
+                          <span className="text-[9px] px-2.5 py-1 rounded bg-slate-50 text-slate-600 font-bold uppercase tracking-wider border border-slate-100">
+                            {shineTypeLabels[item.shineType || 'TICK']}
+                          </span>
+                        )}
+                        {item.type === 'SHINE_SECTOR' && item.shineType === 'NUMBER' && item.targetSteps !== null && (
                           <span className="text-[9px] px-2.5 py-1 rounded bg-amber-50 text-amber-700 font-bold uppercase tracking-wider border border-amber-100">
                             Goal: {item.targetSteps} Steps Required
                           </span>

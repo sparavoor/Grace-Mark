@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Trophy, Check, ShieldAlert, Award, HelpCircle, Save, Star } from 'lucide-react';
+import { Trophy, Check, ShieldAlert, Award, HelpCircle, Save, Star, FileText } from 'lucide-react';
 import { FadeInUp, ScaleIn, StaggerContainer } from '@/components/Animate';
 import { submitSectorGraceMarks } from '@/app/actions/grace-marks';
 
@@ -13,6 +13,7 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
       initialMap[key] = {
         percentage: sub.percentage,
         isTicked: sub.isTicked,
+        textAnswer: sub.textAnswer || '',
         saved: true
       };
     }
@@ -24,8 +25,9 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
       const key = `${c.id}_sector`;
       const existing = initialMap[key];
       states[key] = {
-        percentage: existing ? existing.percentage : 0,
+        percentage: existing ? existing.percentage : (c.shineType === 'NUMBER' ? 0 : 100),
         isTicked: existing ? existing.isTicked : false,
+        textAnswer: existing ? existing.textAnswer : '',
         saving: false,
         error: '',
         success: ''
@@ -34,10 +36,16 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
     return states;
   });
 
-  function getMarksForPercentage(percentage, targetSteps = null) {
+  function getMarksForPercentage(percentage, targetSteps = null, shineType = 'TICK') {
     const pct = parseFloat(percentage) || 0;
-    if (targetSteps && targetSteps > 0) {
-      return pct >= targetSteps ? 20 : 0;
+    if (shineType === 'TICK' || shineType === 'TEXT') {
+      return 20;
+    }
+    if (shineType === 'NUMBER') {
+      if (targetSteps && targetSteps > 0) {
+        return pct >= targetSteps ? 20 : 0;
+      }
+      return parseFloat(((pct / 100) * 20).toFixed(2));
     }
     return parseFloat(((pct / 100) * 20).toFixed(2));
   }
@@ -45,7 +53,7 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
   function calculateCriteriaLiveMarks(criteriaItem) {
     const state = formStates[`${criteriaItem.id}_sector`];
     if (state && state.isTicked) {
-      return getMarksForPercentage(state.percentage, criteriaItem.targetSteps);
+      return getMarksForPercentage(state.percentage, criteriaItem.targetSteps, criteriaItem.shineType);
     }
     return 0;
   }
@@ -56,7 +64,13 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
     
     updateFormState(key, { error: '', success: '', saving: true });
 
-    const result = await submitSectorGraceMarks(criteriaId, state.percentage, state.isTicked, null);
+    const result = await submitSectorGraceMarks(
+      criteriaId, 
+      state.percentage, 
+      state.isTicked, 
+      null, 
+      state.textAnswer || null
+    );
     
     if (result.error) {
       updateFormState(key, { error: result.error, saving: false });
@@ -111,8 +125,8 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
           {criteria.map((item) => {
             const criteriaLiveMarks = calculateCriteriaLiveMarks(item);
             const stateKey = `${item.id}_sector`;
-            const state = formStates[stateKey] || { percentage: 0, isTicked: false, saving: false, error: '', success: '' };
-            const hasTarget = item.targetSteps !== null && item.targetSteps > 0;
+            const state = formStates[stateKey] || { percentage: 0, isTicked: false, textAnswer: '', saving: false, error: '', success: '' };
+            const hasTarget = item.shineType === 'NUMBER' && item.targetSteps !== null && item.targetSteps > 0;
             const targetReached = hasTarget && state.percentage >= item.targetSteps;
 
             return (
@@ -125,22 +139,22 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
                         <span className="text-[9px] px-2.5 py-1 rounded bg-amber-50 text-amber-600 font-semibold uppercase tracking-wider border border-amber-100">
                           Shine Sector
                         </span>
-                        {hasTarget && (
+                        {item.shineType === 'NUMBER' && item.targetSteps && (
                           <span className="text-[9px] px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 font-bold uppercase tracking-wider border border-indigo-100 flex items-center gap-1">
                             <Star className="w-3 h-3 text-indigo-500 fill-indigo-500 shrink-0" />
                             Target: {item.targetSteps} Steps
+                          </span>
+                        )}
+                        {item.shineType === 'TEXT' && (
+                          <span className="text-[9px] px-2.5 py-1 rounded bg-sky-50 text-sky-700 font-bold uppercase tracking-wider border border-sky-100 flex items-center gap-1">
+                            <FileText className="w-3 h-3 text-sky-500 shrink-0" />
+                            Short Answer Required
                           </span>
                         )}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <div className="px-4 py-2 bg-amber-50/50 border border-amber-100 rounded-lg text-right shrink-0">
-                        <span className="text-sm font-bold text-amber-700 leading-none">
-                          {state.isTicked ? state.percentage : 0}{hasTarget ? ' Steps' : '%'}
-                        </span>
-                        <span className="text-[10px] text-slate-500 font-medium"> Reported</span>
-                      </div>
                       <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-right shrink-0">
                         <span className="text-lg font-bold text-navy-900 leading-none">{criteriaLiveMarks.toFixed(1)}</span>
                         <span className="text-[10px] text-slate-400 font-medium"> / 20.0 Sector Marks</span>
@@ -157,13 +171,17 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
                       <HelpCircle className="w-3.5 h-3.5 text-indigo-600" />
                       Grading Standard
                     </h4>
-                    {hasTarget ? (
+                    {item.shineType === 'NUMBER' ? (
                       <p className="text-[10px] font-semibold text-indigo-600 uppercase leading-none">
                         Goal-based scoring! Reach or exceed <span className="font-bold text-indigo-800">{item.targetSteps} steps</span> to unlock the full <span className="font-bold text-indigo-800">20.0 grace marks</span>. Below {item.targetSteps} steps yields 0 marks.
                       </p>
+                    ) : item.shineType === 'TEXT' ? (
+                      <p className="text-[10px] font-semibold text-indigo-600 uppercase leading-none">
+                        Tick to claim and submit a short answer response to receive the full <span className="font-bold text-indigo-800">20.0 grace marks</span>.
+                      </p>
                     ) : (
                       <p className="text-[10px] font-semibold text-indigo-600 uppercase leading-none">
-                        Proportional scoring! Completing 100% gives 20 marks. Progress gives linear marks.
+                        Tick option scoring! Ticking this checkbox unlocks the full <span className="font-bold text-indigo-800">20.0 grace marks</span>.
                       </p>
                     )}
                   </div>
@@ -184,7 +202,7 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
 
                     {state.isTicked && (
                       <div className="space-y-4 animate-fade-in">
-                        {hasTarget ? (
+                        {item.shineType === 'NUMBER' && (
                           <div className="space-y-3 p-4 bg-slate-50 border border-slate-100 rounded-2xl">
                             <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
                               <span>Completed Steps Taken</span>
@@ -219,36 +237,26 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
                               />
                             </div>
                           </div>
-                        ) : (
-                          <div className="space-y-3">
-                            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                              <span>Completed Percentage</span>
-                              <span className="text-navy-900 text-sm font-bold bg-white px-2.5 py-1 border border-slate-200 rounded-lg">{state.percentage}%</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-4">
-                              <input 
-                                type="range" 
-                                min="0" 
-                                max="100" 
-                                value={state.percentage}
-                                onChange={(e) => updateFormState(stateKey, { percentage: parseInt(e.target.value) })}
-                                className="flex-grow h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                              />
-                              <input 
-                                type="number" 
-                                min="0" 
-                                max="100"
-                                value={state.percentage}
-                                onChange={(e) => {
-                                  let val = parseInt(e.target.value) || 0;
-                                  if (val < 0) val = 0;
-                                  if (val > 100) val = 100;
-                                  updateFormState(stateKey, { percentage: val });
-                                }}
-                                className="w-16 px-2 py-1.5 border border-slate-200 rounded-xl text-center text-sm focus:outline-none focus:border-indigo-600 font-bold"
-                              />
-                            </div>
+                        )}
+
+                        {item.shineType === 'TEXT' && (
+                          <div className="space-y-3 p-4 bg-slate-50 border border-slate-100 rounded-2xl animate-fade-in">
+                            <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Short Answer / Response</label>
+                            <textarea 
+                              value={state.textAnswer || ''}
+                              onChange={(e) => updateFormState(stateKey, { textAnswer: e.target.value })}
+                              placeholder="Type your response/answer here..."
+                              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-600 font-medium bg-white h-24 resize-none text-navy-900"
+                              required
+                            />
+                          </div>
+                        )}
+
+                        {item.shineType === 'TICK' && (
+                          <div className="p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl text-center animate-fade-in">
+                            <p className="text-xs font-semibold text-emerald-800 uppercase tracking-tight">
+                              🎉 Checked! You get the full 20.0 grace marks.
+                            </p>
                           </div>
                         )}
                       </div>

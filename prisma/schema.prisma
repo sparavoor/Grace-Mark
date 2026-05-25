@@ -79,6 +79,7 @@ model GraceMarkCriteria {
   description String?
   isActive    Boolean                @default(true)
   targetSteps Int?                   // Number of steps required specifically for SHINE_SECTOR criteria
+  shineType   String?                @default("TICK") // TICK, NUMBER, TEXT
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @updatedAt
   submissions GraceMarkSubmission[]
@@ -95,6 +96,7 @@ model GraceMarkSubmission {
   percentage  Float              // 0 to 100 percentage completed
   marks       Float              // Calculated marks based on rules
   isTicked    Boolean            @default(true) // Option to tick / participate filled by sector
+  textAnswer  String?            // Short answer specifically for SHINE_SECTOR text criteria
   submittedAt DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 
