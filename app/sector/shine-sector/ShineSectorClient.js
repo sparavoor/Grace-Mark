@@ -36,18 +36,21 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
     return states;
   });
 
+  const criteriaCount = criteria.length > 0 ? criteria.length : 1;
+  const marksPerCriteria = 20 / criteriaCount;
+
   function getMarksForPercentage(percentage, targetSteps = null, shineType = 'TICK') {
     const pct = parseFloat(percentage) || 0;
     if (shineType === 'TICK' || shineType === 'TEXT') {
-      return 20;
+      return marksPerCriteria;
     }
     if (shineType === 'NUMBER') {
       if (targetSteps && targetSteps > 0) {
-        return pct >= targetSteps ? 20 : 0;
+        return pct >= targetSteps ? marksPerCriteria : 0;
       }
-      return parseFloat(((pct / 100) * 20).toFixed(2));
+      return parseFloat(((pct / 100) * marksPerCriteria).toFixed(2));
     }
-    return parseFloat(((pct / 100) * 20).toFixed(2));
+    return parseFloat(((pct / 100) * marksPerCriteria).toFixed(2));
   }
 
   function calculateCriteriaLiveMarks(criteriaItem) {
@@ -61,23 +64,23 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
   async function handleSaveSector(criteriaId) {
     const key = `${criteriaId}_sector`;
     const state = formStates[key];
-    
+
     updateFormState(key, { error: '', success: '', saving: true });
 
     const result = await submitSectorGraceMarks(
-      criteriaId, 
-      state.percentage, 
-      state.isTicked, 
-      null, 
+      criteriaId,
+      state.percentage,
+      state.isTicked,
+      null,
       state.textAnswer || null
     );
-    
+
     if (result.error) {
       updateFormState(key, { error: result.error, saving: false });
     } else {
-      updateFormState(key, { 
-        success: `Successfully updated!`, 
-        saving: false 
+      updateFormState(key, {
+        success: `Successfully updated!`,
+        saving: false
       });
       setTimeout(() => {
         updateFormState(key, { success: '' });
@@ -157,7 +160,7 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
                     <div className="flex items-center gap-4">
                       <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-right shrink-0">
                         <span className="text-lg font-bold text-navy-900 leading-none">{criteriaLiveMarks.toFixed(1)}</span>
-                        <span className="text-[10px] text-slate-400 font-medium"> / 20.0 Sector Marks</span>
+                        <span className="text-[10px] text-slate-400 font-medium"> / {marksPerCriteria.toFixed(1)} Sector Marks</span>
                       </div>
                     </div>
                   </div>
@@ -173,23 +176,23 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
                     </h4>
                     {item.shineType === 'NUMBER' ? (
                       <p className="text-[10px] font-semibold text-indigo-600 uppercase leading-none">
-                        Goal-based scoring! Reach or exceed <span className="font-bold text-indigo-800">{item.targetSteps} steps</span> to unlock the full <span className="font-bold text-indigo-800">20.0 grace marks</span>. Below {item.targetSteps} steps yields 0 marks.
+                        Goal-based scoring! Reach or exceed <span className="font-bold text-indigo-800">{item.targetSteps} steps</span> to unlock the full <span className="font-bold text-indigo-800">{marksPerCriteria.toFixed(1)} grace marks</span>. Below {item.targetSteps} steps yields 0 marks.
                       </p>
                     ) : item.shineType === 'TEXT' ? (
                       <p className="text-[10px] font-semibold text-indigo-600 uppercase leading-none">
-                        Tick to claim and submit a short answer response to receive the full <span className="font-bold text-indigo-800">20.0 grace marks</span>.
+                        Tick to claim and submit a short answer response to receive the full <span className="font-bold text-indigo-800">{marksPerCriteria.toFixed(1)} grace marks</span>.
                       </p>
                     ) : (
                       <p className="text-[10px] font-semibold text-indigo-600 uppercase leading-none">
-                        Tick option scoring! Ticking this checkbox unlocks the full <span className="font-bold text-indigo-800">20.0 grace marks</span>.
+                        Tick option scoring! Ticking this checkbox unlocks the full <span className="font-bold text-indigo-800">{marksPerCriteria.toFixed(1)} grace marks</span>.
                       </p>
                     )}
                   </div>
 
                   <div className="space-y-6 pt-4 border-t border-slate-100">
                     <div className="flex items-center gap-3 p-4 bg-indigo-50/40 border border-indigo-100/50 rounded-2xl">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         id={`tick-${stateKey}`}
                         checked={state.isTicked}
                         onChange={(e) => updateFormState(stateKey, { isTicked: e.target.checked })}
@@ -221,11 +224,11 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
                                 </span>
                               </div>
                             </div>
-                            
+
                             <div className="flex items-center gap-4 pt-2">
-                              <input 
-                                type="number" 
-                                min="0" 
+                              <input
+                                type="number"
+                                min="0"
                                 value={state.percentage}
                                 onChange={(e) => {
                                   let val = parseInt(e.target.value) || 0;
@@ -242,7 +245,7 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
                         {item.shineType === 'TEXT' && (
                           <div className="space-y-3 p-4 bg-slate-50 border border-slate-100 rounded-2xl animate-fade-in">
                             <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Short Answer / Response</label>
-                            <textarea 
+                            <textarea
                               value={state.textAnswer || ''}
                               onChange={(e) => updateFormState(stateKey, { textAnswer: e.target.value })}
                               placeholder="Type your response/answer here..."
@@ -255,7 +258,7 @@ export default function ShineSectorClient({ criteria, initialSubmissions }) {
                         {item.shineType === 'TICK' && (
                           <div className="p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl text-center animate-fade-in">
                             <p className="text-xs font-semibold text-emerald-800 uppercase tracking-tight">
-                              🎉 Checked! You get the full 20.0 grace marks.
+                              🎉 Checked! You get the full {marksPerCriteria.toFixed(1)} grace marks.
                             </p>
                           </div>
                         )}
