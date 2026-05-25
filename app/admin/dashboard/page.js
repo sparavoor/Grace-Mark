@@ -15,6 +15,9 @@ export default async function AdminDashboard() {
         include: {
           meeting: true
         }
+      },
+      graceMarkSubmissions: {
+        include: { criteria: true }
       }
     }
   });

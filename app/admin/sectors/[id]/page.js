@@ -34,6 +34,9 @@ export default async function SectorDetailPage({ params }) {
       reports: {
         include: { meeting: true, unit: true },
         orderBy: { submittedAt: 'desc' }
+      },
+      graceMarkSubmissions: {
+        include: { criteria: true }
       }
     }
   });
@@ -66,13 +69,13 @@ export default async function SectorDetailPage({ params }) {
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="flex flex-col items-center justify-center w-full sm:w-48 py-8 bg-slate-900 rounded-[2.5rem] text-white shadow-2xl shadow-slate-900/30 group hover:scale-105 transition-transform">
               <p className="text-[9px] font-medium uppercase text-indigo-400 tracking-[0.3em] mb-3 opacity-80">Progress</p>
-              <p className="text-4xl md:text-5xl font-semibold leading-none">{((scores.total / 20) * 100).toFixed(0)}%</p>
+              <p className="text-4xl md:text-5xl font-semibold leading-none">{((scores.total / 80) * 100).toFixed(0)}%</p>
             </div>
             <div className="flex flex-col items-center justify-center w-full sm:w-48 py-8 glass-card border-indigo-100 rounded-[2.5rem] shadow-xl group hover:scale-105 transition-transform">
               <p className="text-[9px] font-medium uppercase text-slate-400 tracking-[0.3em] mb-3 opacity-80">Total Marks</p>
               <div className="flex items-baseline justify-center gap-1.5 leading-none">
                   <p className="text-4xl md:text-5xl font-semibold text-indigo-600 leading-none">{scores.total.toFixed(1)}</p>
-                  <span className="text-[10px] text-slate-300 font-medium tracking-tighter uppercase">/ 20.0</span>
+                  <span className="text-[10px] text-slate-300 font-medium tracking-tighter uppercase">/ 80.0</span>
               </div>
             </div>
           </div>

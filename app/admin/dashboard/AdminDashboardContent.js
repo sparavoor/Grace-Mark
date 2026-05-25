@@ -55,7 +55,7 @@ export default function AdminDashboardContent({ sectors, totalUnits, totalReport
           </p>
           <div className="flex items-baseline gap-1.5 leading-none">
             <p className="text-4xl font-semibold text-brand-indigo leading-none">{avgScore.toFixed(1)}</p>
-            <span className="text-xs text-slate-300 font-medium tracking-tighter uppercase">/ 20</span>
+            <span className="text-xs text-slate-300 font-medium tracking-tighter uppercase">/ 80</span>
           </div>
         </ScaleIn>
       </StaggerContainer>
@@ -107,6 +107,22 @@ export default function AdminDashboardContent({ sectors, totalUnits, totalReport
                     <div 
                       className="progress-bar-fill opacity-80" 
                       style={{ width: `${sector.scores.unitPercentage}%`, background: 'linear-gradient(90deg, #4F46E5, #1E3A8A)' }} 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-[11px] font-medium mb-3">
+                    <span className="text-slate-400 uppercase tracking-widest">Grace Marks</span>
+                    <span className="text-navy-900">{sector.scores.graceMarksTotal.toFixed(1)} / 60.0</span>
+                  </div>
+                  <div className="progress-thick">
+                    <div 
+                      className="progress-bar-fill opacity-80" 
+                      style={{ 
+                        width: `${(sector.scores.graceMarksTotal / 60) * 100}%`, 
+                        background: 'linear-gradient(90deg, #F59E0B, #D97706)' 
+                      }} 
                     />
                   </div>
                 </div>

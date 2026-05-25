@@ -14,6 +14,7 @@ export default async function AdminLayout({ children }) {
     { name: 'Analytics', href: '/admin/reports', icon: BarChart3 },
     { name: 'Sectors', href: '/admin/sectors', icon: Users },
     { name: 'Units', href: '/admin/units', icon: Network },
+    { name: 'Grace Marks', href: '/admin/grace-marks', icon: Trophy },
   ];
 
   return (

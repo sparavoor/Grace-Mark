@@ -18,14 +18,15 @@ model User {
 }
 
 model Sector {
-  id        String    @id @default(cuid())
+  id        String                 @id @default(cuid())
   name      String
-  userId    String    @unique
-  user      User      @relation(fields: [userId], references: [id])
+  userId    String                 @unique
+  user      User                   @relation(fields: [userId], references: [id])
   units     Unit[]
   reports   MeetingReport[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  graceMarkSubmissions GraceMarkSubmission[]
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
 }
 
 model Unit {
@@ -34,6 +35,7 @@ model Unit {
   sectorId  String
   sector    Sector    @relation(fields: [sectorId], references: [id])
   reports   MeetingReport[]
+  graceMarkSubmissions GraceMarkSubmission[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -69,3 +71,32 @@ model MeetingReport {
   
   @@unique([meetingId, sectorId, unitId]) // Refined unique constraint
 }
+
+model GraceMarkCriteria {
+  id          String                 @id @default(cuid())
+  type        String                 // UNIT_SAHITYOTSAV, BRIGHT_UNIT_SAHITYOTSAV, SHINE_SECTOR
+  name        String
+  description String?
+  isActive    Boolean                @default(true)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  submissions GraceMarkSubmission[]
+}
+
+model GraceMarkSubmission {
+  id          String             @id @default(cuid())
+  sectorId    String
+  sector      Sector             @relation(fields: [sectorId], references: [id])
+  criteriaId  String
+  criteria    GraceMarkCriteria  @relation(fields: [criteriaId], references: [id])
+  unitId      String?
+  unit        Unit?              @relation(fields: [unitId], references: [id])
+  percentage  Float              // 0 to 100 percentage completed
+  marks       Float              // Calculated marks based on rules
+  isTicked    Boolean            @default(true) // Option to tick / participate filled by sector
+  submittedAt DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([sectorId, criteriaId, unitId])
+}
+

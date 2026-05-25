@@ -14,7 +14,10 @@ export default async function ScorecardPage() {
       sector: {
         include: {
           units: true,
-          reports: { include: { meeting: true } }
+          reports: { include: { meeting: true } },
+          graceMarkSubmissions: {
+            include: { criteria: true }
+          }
         }
       }
     }
@@ -30,7 +33,7 @@ export default async function ScorecardPage() {
     { name: 'Unit Meetings', points: 10, current: scores.unitMarks, color: 'text-emerald-500', iconName: 'Target', status: 'Active' },
     { name: 'Organization', points: 25, current: 0, color: 'text-slate-300', iconName: 'ShieldCheck', status: 'Upcoming' },
     { name: 'Programs', points: 30, current: 0, color: 'text-slate-300', iconName: 'Zap', status: 'Upcoming' },
-    { name: 'Grace Marks', points: 20, current: 0, color: 'text-slate-300', iconName: 'Trophy', status: 'Upcoming' },
+    { name: 'Grace Marks', points: 60, current: scores.graceMarksTotal, color: 'text-amber-500', iconName: 'Trophy', status: 'Active' },
   ];
 
   return <ScorecardContent scores={scores} breakdown={breakdown} />;

@@ -13,26 +13,31 @@ export async function login(formData) {
     return { error: 'Username and password are required' };
   }
 
-  const user = await prisma.user.findUnique({
-    where: { username },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { username },
+    });
 
-  if (!user) {
-    return { error: 'Invalid credentials' };
-  }
+    if (!user) {
+      return { error: 'Invalid credentials' };
+    }
 
-  const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
-  if (!isPasswordValid) {
-    return { error: 'Invalid credentials' };
-  }
+    if (!isPasswordValid) {
+      return { error: 'Invalid credentials' };
+    }
 
-  await createSession(user);
+    await createSession(user);
 
-  if (user.role === 'ADMIN') {
-    redirect('/admin/dashboard');
-  } else {
-    redirect('/sector/dashboard');
+    if (user.role === 'ADMIN') {
+      redirect('/admin/dashboard');
+    } else {
+      redirect('/sector/dashboard');
+    }
+  } catch (e) {
+    console.error('Login error:', e);
+    return { error: 'System connection error. Please try again.' };
   }
 }
 
