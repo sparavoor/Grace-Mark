@@ -12,7 +12,9 @@ export default async function SectorLayout({ children }) {
     { name: 'Overview', href: '/sector/dashboard', icon: LayoutDashboard },
     { name: 'Submit Report', href: '/sector/report', icon: FileText },
     { name: 'Score card', href: '/sector/scorecard', icon: ShieldCheck },
-    { name: 'Grace Marks', href: '/sector/grace-marks', icon: Trophy },
+    { name: 'Unit Sahityotsav', href: '/sector/unit-sahityotsav', icon: Trophy },
+    { name: 'Bright Unit Sahityotsav', href: '/sector/bright-unit-sahityotsav', icon: Trophy },
+    { name: 'Shine Sector', href: '/sector/shine-sector', icon: Trophy },
   ];
 
   return (

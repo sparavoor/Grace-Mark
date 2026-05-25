@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Trophy, Check, ShieldAlert, Award, ArrowRight, HelpCircle, Save } from 'lucide-react';
+import { Trophy, Check, ShieldAlert, Award, ArrowRight, HelpCircle, Save, CheckCircle2 } from 'lucide-react';
 import { FadeInUp, ScaleIn, StaggerContainer } from '@/components/Animate';
 import { submitSectorGraceMarks } from '@/app/actions/grace-marks';
 
@@ -27,7 +27,7 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
           const key = `${c.id}_${unit.id}`;
           const existing = initialMap[key];
           states[key] = {
-            percentage: existing ? existing.percentage : 0,
+            percentage: 100,
             isTicked: existing ? existing.isTicked : false,
             saving: false,
             error: '',
@@ -80,20 +80,39 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
     const isUnitLevel = criteriaItem.type === 'UNIT_SAHITYOTSAV' || criteriaItem.type === 'BRIGHT_UNIT_SAHITYOTSAV';
     if (isUnitLevel) {
       if (units.length === 0) return 0;
-      let totalMarks = 0;
+      let completedCount = 0;
       units.forEach(unit => {
         const state = formStates[`${criteriaItem.id}_${unit.id}`];
         if (state && state.isTicked) {
-          totalMarks += getMarksForPercentage(criteriaItem.type, state.percentage);
+          completedCount++;
         }
       });
-      return totalMarks / units.length;
+      const pct = Math.round((completedCount / units.length) * 100);
+      return getMarksForPercentage(criteriaItem.type, pct);
     } else {
       const state = formStates[`${criteriaItem.id}_sector`];
       if (state && state.isTicked) {
         return getMarksForPercentage(criteriaItem.type, state.percentage);
       }
       return 0;
+    }
+  }
+
+  function getCriteriaLivePercentage(criteriaItem) {
+    const isUnitLevel = criteriaItem.type === 'UNIT_SAHITYOTSAV' || criteriaItem.type === 'BRIGHT_UNIT_SAHITYOTSAV';
+    if (isUnitLevel) {
+      if (units.length === 0) return 0;
+      let completedCount = 0;
+      units.forEach(unit => {
+        const state = formStates[`${criteriaItem.id}_${unit.id}`];
+        if (state && state.isTicked) {
+          completedCount++;
+        }
+      });
+      return Math.round((completedCount / units.length) * 100);
+    } else {
+      const state = formStates[`${criteriaItem.id}_sector`];
+      return state ? state.percentage : 0;
     }
   }
 
@@ -109,14 +128,36 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
     SHINE_SECTOR: 20
   };
 
-  async function handleSave(criteriaId, type, unitId = null) {
-    const key = unitId ? `${criteriaId}_${unitId}` : `${criteriaId}_sector`;
+  async function handleToggleUnit(criteriaId, type, unitId, checked) {
+    const key = `${criteriaId}_${unitId}`;
+    
+    // Optimistically update & set saving state
+    updateFormState(key, { isTicked: checked, error: '', success: '', saving: true });
+
+    const result = await submitSectorGraceMarks(criteriaId, 100, checked, unitId);
+    
+    if (result.error) {
+      // Revert on error
+      updateFormState(key, { error: result.error, saving: false, isTicked: !checked });
+    } else {
+      updateFormState(key, { 
+        success: 'Saved!', 
+        saving: false 
+      });
+      // Clear success label after 2 seconds
+      setTimeout(() => {
+        updateFormState(key, { success: '' });
+      }, 2000);
+    }
+  }
+
+  async function handleSaveSector(criteriaId, type) {
+    const key = `${criteriaId}_sector`;
     const state = formStates[key];
     
-    // Clear alerts
     updateFormState(key, { error: '', success: '', saving: true });
 
-    const result = await submitSectorGraceMarks(criteriaId, state.percentage, state.isTicked, unitId);
+    const result = await submitSectorGraceMarks(criteriaId, state.percentage, state.isTicked, null);
     
     if (result.error) {
       updateFormState(key, { error: result.error, saving: false });
@@ -151,7 +192,7 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-navy-900 uppercase">
             Grace Marks <span className="text-indigo-600 font-bold">Checklist</span>
           </h1>
-          <p className="text-slate-500 font-normal text-sm mt-1">Submit completed percentages to receive eligible grace marks.</p>
+          <p className="text-slate-500 font-normal text-sm mt-1">Check completed Unit Programs. Marks are auto-calculated for the Sector.</p>
         </div>
         <div className="flex items-center gap-3 px-6 py-3 bg-navy-900 border border-slate-800 rounded-[10px] text-white font-semibold text-xs shadow-xl shadow-navy-900/20">
           <Trophy className="w-4 h-4 text-amber-400" />
@@ -170,6 +211,7 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
           {criteria.map((item) => {
             const isUnitLevel = item.type === 'UNIT_SAHITYOTSAV' || item.type === 'BRIGHT_UNIT_SAHITYOTSAV';
             const criteriaLiveMarks = calculateCriteriaLiveMarks(item);
+            const livePercentage = getCriteriaLivePercentage(item);
 
             return (
               <ScaleIn key={item.id} className="card-premium flex flex-col justify-between relative overflow-hidden group w-full">
@@ -183,9 +225,15 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
                       </span>
                     </div>
 
-                    <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-right shrink-0">
-                      <span className="text-lg font-bold text-navy-900 leading-none">{criteriaLiveMarks.toFixed(1)}</span>
-                      <span className="text-[10px] text-slate-400 font-medium"> / {typeMaxMarks[item.type]}.0 Sector Marks</span>
+                    <div className="flex items-center gap-4">
+                      <div className="px-4 py-2 bg-indigo-50/50 border border-indigo-100 rounded-lg text-right shrink-0">
+                        <span className="text-sm font-bold text-indigo-700 leading-none">{livePercentage}%</span>
+                        <span className="text-[10px] text-slate-500 font-medium"> Completed</span>
+                      </div>
+                      <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-right shrink-0">
+                        <span className="text-lg font-bold text-navy-900 leading-none">{criteriaLiveMarks.toFixed(1)}</span>
+                        <span className="text-[10px] text-slate-400 font-medium"> / {typeMaxMarks[item.type]}.0 Sector Marks</span>
+                      </div>
                     </div>
                   </div>
 
@@ -296,7 +344,7 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
                             )}
 
                             <button
-                              onClick={() => handleSave(item.id, item.type, null)}
+                              onClick={() => handleSaveSector(item.id, item.type)}
                               disabled={state.saving}
                               className="btn-primary w-full py-4 text-[10px] uppercase tracking-[0.2em] font-bold group/btn flex items-center justify-center gap-2"
                             >
@@ -309,93 +357,63 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
                     })()
                   ) : (
                     // UNIT LEVEL CRITERIA (UNIT_SAHITYOTSAV, BRIGHT_UNIT_SAHITYOTSAV)
-                    <div className="space-y-6 pt-4 border-t border-slate-100">
-                      <h4 className="text-xs font-bold text-navy-900 uppercase tracking-wider mb-4">Units Progress Checklist</h4>
+                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold text-navy-900 uppercase tracking-wider">Units Completion Checklist</h4>
+                        <span className="text-[10px] text-indigo-600 font-semibold uppercase tracking-wider animate-pulse">Changes auto-save instantly</span>
+                      </div>
+                      
                       {units.length === 0 ? (
                         <p className="text-slate-400 text-xs italic">No units registered under your sector yet.</p>
                       ) : (
-                        <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {units.map((unit) => {
                             const stateKey = `${item.id}_${unit.id}`;
-                            const state = formStates[stateKey] || { percentage: 0, isTicked: false, saving: false, error: '', success: '' };
-                            const unitLiveMarks = getMarksForPercentage(item.type, state.percentage);
+                            const state = formStates[stateKey] || { percentage: 100, isTicked: false, saving: false, error: '', success: '' };
 
                             return (
-                              <div key={unit.id} className="p-5 border border-slate-100 rounded-2xl bg-white hover:shadow-md transition-all space-y-4">
-                                <div className="flex justify-between items-center gap-4 flex-wrap">
-                                  <div className="flex items-center gap-3">
-                                    <input 
-                                      type="checkbox" 
-                                      id={`tick-${stateKey}`}
-                                      checked={state.isTicked}
-                                      onChange={(e) => updateFormState(stateKey, { isTicked: e.target.checked })}
-                                      className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded cursor-pointer"
-                                    />
-                                    <label htmlFor={`tick-${stateKey}`} className="text-sm font-bold text-navy-900 uppercase tracking-tight select-none cursor-pointer">
-                                      {unit.name}
-                                    </label>
-                                  </div>
-
-                                  <div className="text-xs font-semibold text-slate-500">
-                                    Unit Marks: <span className="font-bold text-navy-900">{state.isTicked ? unitLiveMarks.toFixed(1) : '0.0'}</span> / {item.type === 'UNIT_SAHITYOTSAV' ? '15.0' : '25.0'}
-                                  </div>
+                              <div 
+                                key={unit.id} 
+                                className={`p-4 border rounded-2xl transition-all duration-300 flex items-center justify-between gap-4 ${
+                                  state.isTicked 
+                                    ? 'bg-indigo-50/40 border-indigo-100/80 shadow-sm shadow-indigo-50' 
+                                    : 'bg-slate-50/40 border-slate-100 hover:border-slate-200'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <input 
+                                    type="checkbox" 
+                                    id={`tick-${stateKey}`}
+                                    checked={state.isTicked}
+                                    disabled={state.saving}
+                                    onChange={(e) => handleToggleUnit(item.id, item.type, unit.id, e.target.checked)}
+                                    className="w-5 h-5 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded cursor-pointer disabled:opacity-50"
+                                  />
+                                  <label 
+                                    htmlFor={`tick-${stateKey}`} 
+                                    className={`text-xs font-bold uppercase tracking-tight select-none cursor-pointer ${
+                                      state.isTicked ? 'text-navy-900' : 'text-slate-500'
+                                    }`}
+                                  >
+                                    {unit.name}
+                                  </label>
                                 </div>
 
-                                {state.isTicked && (
-                                  <div className="space-y-3 pl-7 animate-fade-in">
-                                    <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-slate-400">
-                                      <span>Completed Percentage</span>
-                                      <span className="text-navy-900 text-xs font-bold bg-slate-50 px-2 py-0.5 border border-slate-200 rounded-lg">{state.percentage}%</span>
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-4">
-                                      <input 
-                                        type="range" 
-                                        min="0" 
-                                        max="100" 
-                                        value={state.percentage}
-                                        onChange={(e) => updateFormState(stateKey, { percentage: parseInt(e.target.value) })}
-                                        className="flex-grow h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                                      />
-                                      <input 
-                                        type="number" 
-                                        min="0" 
-                                        max="100"
-                                        value={state.percentage}
-                                        onChange={(e) => {
-                                          let val = parseInt(e.target.value) || 0;
-                                          if (val < 0) val = 0;
-                                          if (val > 100) val = 100;
-                                          updateFormState(stateKey, { percentage: val });
-                                        }}
-                                        className="w-14 px-1.5 py-1 border border-slate-200 rounded-lg text-center text-xs focus:outline-none focus:border-indigo-600 font-bold"
-                                      />
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Individual Save Status per Unit */}
-                                <div className="pl-7 space-y-2">
-                                  {state.error && (
-                                    <div className="text-rose-600 text-[10px] font-semibold leading-tight">
-                                      Error: {state.error}
-                                    </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {state.saving && (
+                                    <div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
                                   )}
                                   {state.success && (
-                                    <div className="text-emerald-600 text-[10px] font-semibold leading-tight flex items-center gap-1">
-                                      <Check className="w-3.5 h-3.5" />
+                                    <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest flex items-center gap-1">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                                       {state.success}
-                                    </div>
+                                    </span>
                                   )}
-
-                                  <button
-                                    onClick={() => handleSave(item.id, item.type, unit.id)}
-                                    disabled={state.saving}
-                                    className="px-4 py-2 border border-indigo-600 hover:bg-indigo-50 text-indigo-600 disabled:opacity-50 text-[9px] font-bold uppercase tracking-widest rounded-lg flex items-center gap-1.5 transition-all mt-2"
-                                  >
-                                    <Save className="w-3.5 h-3.5" />
-                                    {state.saving ? 'Saving...' : 'Save Unit Progress'}
-                                  </button>
+                                  {state.error && (
+                                    <span className="text-[9px] text-rose-600 font-semibold" title={state.error}>
+                                      Error
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             );
