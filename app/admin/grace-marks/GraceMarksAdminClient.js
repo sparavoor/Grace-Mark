@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Trophy, Plus, Check, X, ShieldAlert, Award, FileText, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
+import { Trophy, Plus, Check, X, ShieldAlert, Award, FileText, ToggleLeft, ToggleRight, Trash2, Pencil, RotateCcw } from 'lucide-react';
 import { FadeInUp, ScaleIn, StaggerContainer } from '@/components/Animate';
-import { createGraceMarkCriteria, toggleGraceMarkCriteria, deleteGraceMarkCriteria } from '@/app/actions/grace-marks';
+import { createGraceMarkCriteria, toggleGraceMarkCriteria, deleteGraceMarkCriteria, updateGraceMarkCriteria } from '@/app/actions/grace-marks';
 
 export default function GraceMarksAdminClient({ initialCriteria, sectorScores }) {
   const [criteria, setCriteria] = useState(initialCriteria);
@@ -14,8 +14,9 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
-  async function handleAddCriteria(e) {
+  async function handleSubmitCriteria(e) {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -27,18 +28,45 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
     formData.append('description', description);
     formData.append('isActive', isActive ? 'true' : 'false');
 
-    const result = await createGraceMarkCriteria(formData);
-    setIsSubmitting(false);
+    if (editingId) {
+      const result = await updateGraceMarkCriteria(editingId, formData);
+      setIsSubmitting(false);
 
-    if (result.error) {
-      setError(result.error);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setSuccess('Criteria updated successfully!');
+        setCriteria(criteria.map(c => c.id === editingId ? result.criteria : c));
+        cancelEdit();
+      }
     } else {
-      setSuccess('Criteria created successfully!');
-      setCriteria([result.criteria, ...criteria]);
-      setName('');
-      setDescription('');
-      setIsActive(true);
+      const result = await createGraceMarkCriteria(formData);
+      setIsSubmitting(false);
+
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setSuccess('Criteria created successfully!');
+        setCriteria([result.criteria, ...criteria]);
+        cancelEdit();
+      }
     }
+  }
+
+  function startEdit(item) {
+    setEditingId(item.id);
+    setName(item.name);
+    setType(item.type);
+    setDescription(item.description || '');
+    setIsActive(item.isActive);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setName('');
+    setType('UNIT_SAHITYOTSAV');
+    setDescription('');
+    setIsActive(true);
   }
 
   async function handleToggleActive(id, currentStatus) {
@@ -116,15 +144,15 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Side: Create Criteria Form */}
+        {/* Left Side: Create / Edit Criteria Form */}
         <div className="lg:col-span-1 space-y-6">
           <div className="card-premium">
             <h2 className="text-xl font-bold text-navy-900 uppercase flex items-center gap-3 mb-6">
-              <Plus className="w-5 h-5 text-indigo-600" />
-              Add New Criteria
+              {editingId ? <Pencil className="w-5 h-5 text-indigo-600 animate-pulse" /> : <Plus className="w-5 h-5 text-indigo-600" />}
+              {editingId ? 'Edit Criteria' : 'Add New Criteria'}
             </h2>
 
-            <form onSubmit={handleAddCriteria} className="space-y-5">
+            <form onSubmit={handleSubmitCriteria} className="space-y-5">
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Criteria Name</label>
                 <input 
@@ -173,13 +201,25 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
                 </label>
               </div>
 
-              <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="btn-primary w-full py-4 text-[10px] uppercase tracking-[0.2em] font-bold"
-              >
-                {isSubmitting ? 'Creating...' : 'Create Criteria'}
-              </button>
+              <div className="flex items-center gap-4">
+                {editingId && (
+                  <button 
+                    type="button"
+                    onClick={cancelEdit}
+                    className="w-1/3 py-4 border border-slate-200 text-slate-500 rounded-xl text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Cancel
+                  </button>
+                )}
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className={`btn-primary py-4 text-[10px] uppercase tracking-[0.2em] font-bold flex-grow ${editingId ? 'bg-indigo-600' : ''}`}
+                >
+                  {isSubmitting ? (editingId ? 'Saving...' : 'Creating...') : (editingId ? 'Save Changes' : 'Create Criteria')}
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -200,7 +240,11 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
             ) : (
               <div className="space-y-4">
                 {criteria.map((item) => (
-                  <div key={item.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border border-slate-100 rounded-2xl hover:border-slate-200 hover:shadow-md transition-all gap-4">
+                  <div key={item.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 border rounded-2xl hover:shadow-md transition-all gap-4 ${
+                    editingId === item.id 
+                      ? 'border-indigo-600 bg-indigo-50/10 shadow-sm shadow-indigo-100' 
+                      : 'border-slate-100 hover:border-slate-200 bg-white'
+                  }`}>
                     <div className="space-y-1">
                       <div className="flex items-center gap-3 flex-wrap">
                         <h3 className="font-bold text-navy-900 text-base uppercase leading-none">{item.name}</h3>
@@ -216,7 +260,7 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
                       )}
                     </div>
 
-                    <div className="flex items-center gap-4 self-end sm:self-center shrink-0">
+                    <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
                       {/* Tick Toggle (Option to Tick / Activate) */}
                       <button 
                         onClick={() => handleToggleActive(item.id, item.isActive)}
@@ -234,6 +278,15 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
                             Inactive
                           </div>
                         )}
+                      </button>
+
+                      {/* Edit Button */}
+                      <button 
+                        onClick={() => startEdit(item)}
+                        className="p-2 text-slate-300 hover:text-indigo-600 transition-colors bg-slate-50 hover:bg-indigo-50 rounded-lg border border-slate-100 hover:border-indigo-100"
+                        title="Edit Criteria"
+                      >
+                        <Pencil className="w-4 h-4" />
                       </button>
 
                       {/* Delete */}

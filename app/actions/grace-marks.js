@@ -98,6 +98,36 @@ export async function deleteGraceMarkCriteria(id) {
   }
 }
 
+// Admin Action: Update Grace Mark Criteria
+export async function updateGraceMarkCriteria(id, formData) {
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') return { error: 'Unauthorized' };
+
+  const name = formData.get('name');
+  const type = formData.get('type');
+  const description = formData.get('description');
+  const isActive = formData.get('isActive') === 'true';
+
+  if (!name || !type) return { error: 'Name and Type are required' };
+
+  try {
+    const criteria = await prisma.graceMarkCriteria.update({
+      where: { id },
+      data: {
+        name,
+        type,
+        description,
+        isActive
+      }
+    });
+
+    revalidatePath('/admin/grace-marks');
+    return { success: true, criteria };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
 // Sector Action: Submit or Update Grace Marks Percentage & Checklist Tick
 export async function submitSectorGraceMarks(criteriaId, percentage, isTicked, unitId = null) {
   const session = await getSession();
