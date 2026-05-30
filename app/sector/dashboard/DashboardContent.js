@@ -20,13 +20,13 @@ export default function DashboardContent({ sector, scores }) {
       </FadeInUp>
 
       {/* Metric Summary - High Impact KPI Cards */}
-      <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <ScaleIn className="card-premium relative overflow-hidden group border-b-4 border-b-brand-indigo shadow-indigo-500/5">
           <div className="absolute top-0 right-0 w-20 h-20 bg-brand-light/20 -mr-10 -mt-10 rounded-full" />
           <p className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.3em] mb-4">TOTAL MARKS</p>
           <div className="flex items-baseline gap-2 leading-none">
             <p className="text-6xl font-semibold text-navy-900 tracking-tighter">{scores.total.toFixed(1)}</p>
-            <span className="text-2xl text-slate-300 font-medium tracking-tighter opacity-50">/ 20.0</span>
+            <span className="text-2xl text-slate-300 font-medium tracking-tighter opacity-50">/ 80.0</span>
           </div>
           <div className="mt-6 pt-4 border-t border-slate-50 flex items-center gap-2 text-[9px] font-medium text-emerald-600 uppercase">
               <ShieldCheck className="w-3.5 h-3.5" />
@@ -34,7 +34,7 @@ export default function DashboardContent({ sector, scores }) {
           </div>
         </ScaleIn>
         
-        <ScaleIn delay={0.1} className="card-premium group relative overflow-hidden">
+        <ScaleIn delay={0.05} className="card-premium group relative overflow-hidden">
           <p className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] mb-6">SECTOR MARKS</p>
           <div className="flex items-baseline gap-2 leading-none mb-6">
             <p className="text-4xl font-semibold text-navy-900">{scores.sectorMarks.toFixed(1)}</p>
@@ -45,7 +45,7 @@ export default function DashboardContent({ sector, scores }) {
           </div>
         </ScaleIn>
 
-        <ScaleIn delay={0.2} className="card-premium group relative overflow-hidden">
+        <ScaleIn delay={0.1} className="card-premium group relative overflow-hidden">
           <p className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] mb-6">UNIT MARKS</p>
           <div className="flex items-baseline gap-2 leading-none mb-6">
             <p className="text-4xl font-semibold text-navy-900">{scores.unitMarks.toFixed(1)}</p>
@@ -53,6 +53,17 @@ export default function DashboardContent({ sector, scores }) {
           </div>
           <div className="progress-thick">
              <div className="progress-bar-fill" style={{ width: `${scores.unitPercentage}%`, background: 'linear-gradient(90deg, #4F46E5, #1E3A8A)' }} />
+          </div>
+        </ScaleIn>
+
+        <ScaleIn delay={0.15} className="card-premium group relative overflow-hidden border-b-4 border-b-amber-500 shadow-amber-500/5">
+          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] mb-6">GRACE MARKS</p>
+          <div className="flex items-baseline gap-2 leading-none mb-6">
+            <p className="text-4xl font-semibold text-navy-900">{scores.graceMarksTotal.toFixed(1)}</p>
+            <span className="text-xs text-slate-400 font-medium tracking-tighter">/ 60.0</span>
+          </div>
+          <div className="progress-thick">
+             <div className="progress-bar-fill" style={{ width: `${Math.round((scores.graceMarksTotal / 60) * 100)}%`, background: 'linear-gradient(90deg, #F59E0B, #D97706)' }} />
           </div>
         </ScaleIn>
       </StaggerContainer>
@@ -149,6 +160,127 @@ export default function DashboardContent({ sector, scores }) {
           </div>
         </FadeInUp>
       </div>
+
+      {/* Grace Marks Overview - Detailed Breakdown */}
+      <FadeInUp delay={0.5} className="card-premium relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-6 opacity-[0.03]">
+          <Trophy className="w-24 h-24 text-amber-500" />
+        </div>
+        <h2 className="text-xl font-bold text-navy-900 uppercase flex items-center gap-3 mb-8 tracking-tight">
+          <Trophy className="w-5 h-5 text-amber-500 animate-bounce" />
+          Grace Marks Overview
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-sans">
+          {/* Unit Sahityotsav */}
+          <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-indigo-100 hover:bg-white transition-all flex flex-col justify-between group/card shadow-sm">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h3 className="font-bold text-navy-900 text-sm uppercase tracking-tight">Unit Sahityotsav</h3>
+                <span className={`text-[8px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+                  scores.graceMarks.unitSahityotsav.isTicked 
+                    ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' 
+                    : 'bg-slate-100 text-slate-400 border border-slate-200'
+                }`}>
+                  {scores.graceMarks.unitSahityotsav.isTicked ? 'Active' : 'No Data'}
+                </span>
+              </div>
+              <p className="text-slate-400 text-[10px] leading-relaxed mb-4 font-normal">Proportional scoring from completed Unit Sahityotsav programs.</p>
+              {scores.graceMarks.unitSahityotsav.isTicked && (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none">
+                    <span>Progress</span>
+                    <span>{scores.graceMarks.unitSahityotsav.percentage}%</span>
+                  </div>
+                  <div className="progress-thick">
+                    <div className="progress-bar-fill bg-indigo-600" style={{ width: `${scores.graceMarks.unitSahityotsav.percentage}%` }} />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="mt-8 flex justify-between items-end border-t border-slate-100/50 pt-4">
+              <Link href="/sector/unit-sahityotsav" className="text-[9px] text-indigo-600 hover:text-navy-900 font-bold uppercase tracking-widest flex items-center gap-1">
+                View checklist &rarr;
+              </Link>
+              <span className="text-xl font-bold text-indigo-600 leading-none">
+                {scores.graceMarks.unitSahityotsav.marks.toFixed(1)} <span className="text-[10px] text-slate-400 font-normal">/ 15.0</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Bright Unit Sahityotsav */}
+          <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-emerald-100 hover:bg-white transition-all flex flex-col justify-between group/card shadow-sm">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h3 className="font-bold text-navy-900 text-sm uppercase tracking-tight">Bright Unit Sahityotsav</h3>
+                <span className={`text-[8px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+                  scores.graceMarks.brightUnitSahityotsav.isTicked 
+                    ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                    : 'bg-slate-100 text-slate-400 border border-slate-200'
+                }`}>
+                  {scores.graceMarks.brightUnitSahityotsav.isTicked ? 'Active' : 'No Data'}
+                </span>
+              </div>
+              <p className="text-slate-400 text-[10px] leading-relaxed mb-4 font-normal">Evaluation points mapped from active Bright Unit milestones.</p>
+              {scores.graceMarks.brightUnitSahityotsav.isTicked && (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none">
+                    <span>Progress</span>
+                    <span>{scores.graceMarks.brightUnitSahityotsav.percentage}%</span>
+                  </div>
+                  <div className="progress-thick">
+                    <div className="progress-bar-fill bg-emerald-500" style={{ width: `${scores.graceMarks.brightUnitSahityotsav.percentage}%` }} />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="mt-8 flex justify-between items-end border-t border-slate-100/50 pt-4">
+              <Link href="/sector/bright-unit-sahityotsav" className="text-[9px] text-emerald-600 hover:text-navy-900 font-bold uppercase tracking-widest flex items-center gap-1">
+                View checklist &rarr;
+              </Link>
+              <span className="text-xl font-bold text-emerald-600 leading-none">
+                {scores.graceMarks.brightUnitSahityotsav.marks.toFixed(1)} <span className="text-[10px] text-slate-400 font-normal">/ 25.0</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Shine Sector */}
+          <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-amber-100 hover:bg-white transition-all flex flex-col justify-between group/card shadow-sm">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h3 className="font-bold text-navy-900 text-sm uppercase tracking-tight">Shine Sector</h3>
+                <span className={`text-[8px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+                  scores.graceMarks.shineSector.isTicked 
+                    ? 'bg-amber-50 text-amber-600 border border-amber-100' 
+                    : 'bg-slate-100 text-slate-400 border border-slate-200'
+                }`}>
+                  {scores.graceMarks.shineSector.isTicked ? 'Active' : 'No Data'}
+                </span>
+              </div>
+              <p className="text-slate-400 text-[10px] leading-relaxed mb-4 font-normal">Checklist target completion rates for overall shine criteria.</p>
+              {scores.graceMarks.shineSector.isTicked && (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-none">
+                    <span>Progress</span>
+                    <span>{scores.graceMarks.shineSector.percentage}%</span>
+                  </div>
+                  <div className="progress-thick">
+                    <div className="progress-bar-fill bg-amber-500" style={{ width: `${scores.graceMarks.shineSector.percentage}%` }} />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="mt-8 flex justify-between items-end border-t border-slate-100/50 pt-4">
+              <Link href="/sector/shine-sector" className="text-[9px] text-amber-600 hover:text-navy-900 font-bold uppercase tracking-widest flex items-center gap-1">
+                View checklist &rarr;
+              </Link>
+              <span className="text-xl font-bold text-amber-500 leading-none">
+                {scores.graceMarks.shineSector.marks.toFixed(1)} <span className="text-[10px] text-slate-400 font-normal">/ 20.0</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </FadeInUp>
     </div>
   );
 }
