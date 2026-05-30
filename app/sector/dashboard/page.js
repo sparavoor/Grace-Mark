@@ -29,11 +29,13 @@ export default async function SectorDashboard() {
 
   const sector = user.sector;
 
-  const activeShineCriteriaCount = await prisma.graceMarkCriteria.count({
-    where: { isActive: true, type: 'SHINE_SECTOR' }
-  });
+  const activeCounts = {
+    shine: await prisma.graceMarkCriteria.count({ where: { isActive: true, type: 'SHINE_SECTOR' } }),
+    unitSahityotsav: await prisma.graceMarkCriteria.count({ where: { isActive: true, type: 'UNIT_SAHITYOTSAV' } }),
+    brightUnitSahityotsav: await prisma.graceMarkCriteria.count({ where: { isActive: true, type: 'BRIGHT_UNIT_SAHITYOTSAV' } })
+  };
 
-  const scores = calculateGraceMarks(sector, activeShineCriteriaCount);
+  const scores = calculateGraceMarks(sector, activeCounts);
 
   return <DashboardContent sector={sector} scores={scores} />;
 }

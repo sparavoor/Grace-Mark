@@ -43,11 +43,13 @@ export default async function SectorDetailPage({ params }) {
 
   if (!sector) redirect('/admin/sectors');
 
-  const activeShineCriteriaCount = await prisma.graceMarkCriteria.count({
-    where: { isActive: true, type: 'SHINE_SECTOR' }
-  });
+  const activeCounts = {
+    shine: await prisma.graceMarkCriteria.count({ where: { isActive: true, type: 'SHINE_SECTOR' } }),
+    unitSahityotsav: await prisma.graceMarkCriteria.count({ where: { isActive: true, type: 'UNIT_SAHITYOTSAV' } }),
+    brightUnitSahityotsav: await prisma.graceMarkCriteria.count({ where: { isActive: true, type: 'BRIGHT_UNIT_SAHITYOTSAV' } })
+  };
 
-  const scores = calculateGraceMarks(sector, activeShineCriteriaCount);
+  const scores = calculateGraceMarks(sector, activeCounts);
 
   return (
     <div className="space-y-10 md:space-y-16">

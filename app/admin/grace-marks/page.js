@@ -22,10 +22,14 @@ export default async function GraceMarksAdminPage() {
     }
   });
 
-  const activeShineCriteriaCount = criteria.filter(c => c.isActive && c.type === 'SHINE_SECTOR').length;
+  const activeCounts = {
+    shine: criteria.filter(c => c.isActive && c.type === 'SHINE_SECTOR').length,
+    unitSahityotsav: criteria.filter(c => c.isActive && c.type === 'UNIT_SAHITYOTSAV').length,
+    brightUnitSahityotsav: criteria.filter(c => c.isActive && c.type === 'BRIGHT_UNIT_SAHITYOTSAV').length
+  };
 
   const sectorScores = sectors.map(sector => {
-    const scores = calculateGraceMarks(sector, activeShineCriteriaCount);
+    const scores = calculateGraceMarks(sector, activeCounts);
     return {
       id: sector.id,
       name: sector.name,

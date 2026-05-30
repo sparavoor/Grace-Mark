@@ -98,9 +98,20 @@ export default function UnitSahityotsavClient({ criteria, initialSubmissions, un
     }));
   }
 
-  const totalLiveMarks = criteria.reduce((sum, c) => {
-    return sum + calculateCriteriaLiveMarks(c);
-  }, 0);
+  // Calculate total ticked items globally
+  let totalTickedCount = 0;
+  criteria.forEach(c => {
+    units.forEach(unit => {
+      const state = formStates[`${c.id}_${unit.id}`];
+      if (state && state.isTicked) {
+        totalTickedCount++;
+      }
+    });
+  });
+  
+  const totalPossibleTicked = criteria.length * units.length;
+  const overallPct = totalPossibleTicked > 0 ? Math.round((totalTickedCount / totalPossibleTicked) * 100) : 0;
+  const totalLiveMarks = getMarksForPercentage(overallPct);
 
   return (
     <div className="space-y-10 pb-10">
@@ -126,7 +137,13 @@ export default function UnitSahityotsavClient({ criteria, initialSubmissions, un
       ) : (
         <StaggerContainer className="grid grid-cols-1 gap-8">
           {criteria.map((item) => {
-            const criteriaLiveMarks = calculateCriteriaLiveMarks(item);
+            let completedCount = 0;
+            units.forEach(unit => {
+              const state = formStates[`${item.id}_${unit.id}`];
+              if (state && state.isTicked) {
+                completedCount++;
+              }
+            });
             const livePercentage = getCriteriaLivePercentage(item);
 
             return (
@@ -146,8 +163,8 @@ export default function UnitSahityotsavClient({ criteria, initialSubmissions, un
                         <span className="text-[10px] text-slate-500 font-medium"> Completed</span>
                       </div>
                       <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-right shrink-0">
-                        <span className="text-lg font-bold text-navy-900 leading-none">{criteriaLiveMarks.toFixed(1)}</span>
-                        <span className="text-[10px] text-slate-400 font-medium"> / 15.0 Sector Marks</span>
+                        <span className="text-lg font-bold text-navy-900 leading-none">{completedCount} / {units.length}</span>
+                        <span className="text-[10px] text-slate-400 font-medium"> Units Done</span>
                       </div>
                     </div>
                   </div>
