@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Trophy, Check, ShieldAlert, Award, HelpCircle, Save, CheckCircle2 } from 'lucide-react';
+import { Trophy, Check, ShieldAlert, Award, HelpCircle, Save, CheckCircle2, Star, FileText } from 'lucide-react';
 import { FadeInUp, ScaleIn, StaggerContainer } from '@/components/Animate';
 import { submitSectorGraceMarks } from '@/app/actions/grace-marks';
 
@@ -25,7 +25,7 @@ export default function BrightUnitSahityotsavClient({ criteria, initialSubmissio
         const key = `${c.id}_${unit.id}`;
         const existing = initialMap[key];
         states[key] = {
-          percentage: 100,
+          percentage: existing ? existing.percentage : (c.shineType === 'NUMBER' ? 0 : 100),
           isTicked: existing ? existing.isTicked : false,
           saving: false,
           error: '',
@@ -45,12 +45,23 @@ export default function BrightUnitSahityotsavClient({ criteria, initialSubmissio
     return 0;
   }
 
+  function isUnitCompleted(criteriaItem, unitId) {
+    const state = formStates[`${criteriaItem.id}_${unitId}`];
+    if (!state || !state.isTicked) return false;
+    if (criteriaItem.shineType === 'NUMBER') {
+      const target = criteriaItem.targetSteps;
+      if (target && target > 0) {
+        return state.percentage >= target;
+      }
+    }
+    return true;
+  }
+
   function calculateCriteriaLiveMarks(criteriaItem) {
     if (units.length === 0) return 0;
     let completedCount = 0;
     units.forEach(unit => {
-      const state = formStates[`${criteriaItem.id}_${unit.id}`];
-      if (state && state.isTicked) {
+      if (isUnitCompleted(criteriaItem, unit.id)) {
         completedCount++;
       }
     });
@@ -62,8 +73,7 @@ export default function BrightUnitSahityotsavClient({ criteria, initialSubmissio
     if (units.length === 0) return 0;
     let completedCount = 0;
     units.forEach(unit => {
-      const state = formStates[`${criteriaItem.id}_${unit.id}`];
-      if (state && state.isTicked) {
+      if (isUnitCompleted(criteriaItem, unit.id)) {
         completedCount++;
       }
     });
@@ -72,9 +82,13 @@ export default function BrightUnitSahityotsavClient({ criteria, initialSubmissio
 
   async function handleToggleUnit(criteriaId, unitId, checked) {
     const key = `${criteriaId}_${unitId}`;
+    const state = formStates[key];
+    const crit = criteria.find(c => c.id === criteriaId);
+    const defaultPercentage = checked ? (crit?.shineType === 'NUMBER' ? state.percentage : 100) : 0;
+    
     updateFormState(key, { isTicked: checked, error: '', success: '', saving: true });
 
-    const result = await submitSectorGraceMarks(criteriaId, checked ? 100 : 0, checked, unitId);
+    const result = await submitSectorGraceMarks(criteriaId, defaultPercentage, checked, unitId);
     
     if (result.error) {
       updateFormState(key, { error: result.error, saving: false, isTicked: !checked });
@@ -89,22 +103,17 @@ export default function BrightUnitSahityotsavClient({ criteria, initialSubmissio
     }
   }
 
-  async function handleSaveNumericUnit(criteriaId, unitId, value, targetSteps, shineType) {
+  async function handleSaveNumberUnit(criteriaId, unitId) {
     const key = `${criteriaId}_${unitId}`;
-    const numVal = parseInt(value) || 0;
-    const hasTarget = shineType === 'NUMBER' && targetSteps !== null && targetSteps > 0;
-    const isTicked = hasTarget ? (numVal >= targetSteps) : (numVal > 0);
+    const state = formStates[key];
+    updateFormState(key, { error: '', success: '', saving: true });
 
-    updateFormState(key, { saving: true, error: '', success: '' });
-
-    const result = await submitSectorGraceMarks(criteriaId, numVal, isTicked, unitId);
-
+    const result = await submitSectorGraceMarks(criteriaId, state.percentage, state.isTicked, unitId);
+    
     if (result.error) {
       updateFormState(key, { error: result.error, saving: false });
     } else {
       updateFormState(key, { 
-        percentage: numVal,
-        isTicked: isTicked,
         success: 'Saved!', 
         saving: false 
       });
@@ -112,12 +121,6 @@ export default function BrightUnitSahityotsavClient({ criteria, initialSubmissio
         updateFormState(key, { success: '' });
       }, 2000);
     }
-  }
-
-  function handleNumberChange(criteriaId, unitId, value) {
-    const key = `${criteriaId}_${unitId}`;
-    const numVal = value === '' ? '' : parseInt(value) || 0;
-    updateFormState(key, { percentage: numVal });
   }
 
   function updateFormState(key, updates) {
@@ -130,121 +133,11 @@ export default function BrightUnitSahityotsavClient({ criteria, initialSubmissio
     }));
   }
 
-  const renderChecklist = (item) => {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {units.map((unit) => {
-          const stateKey = `${item.id}_${unit.id}`;
-          const state = formStates[stateKey] || { percentage: 0, isTicked: false, saving: false, error: '', success: '' };
-          const isNumeric = item.shineType === 'NUMBER';
-          const hasTarget = isNumeric && item.targetSteps !== null && item.targetSteps > 0;
-          const targetReached = isNumeric && (hasTarget ? state.percentage >= item.targetSteps : state.percentage > 0);
-
-          return (
-            <div 
-              key={unit.id} 
-              className={`p-4 border rounded-2xl transition-all duration-300 flex flex-col justify-between gap-3 ${
-                state.isTicked 
-                  ? 'bg-emerald-50/45 border-emerald-100/80 shadow-sm shadow-emerald-50' 
-                  : 'bg-slate-50/45 border-slate-100 hover:border-slate-200'
-              }`}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  {!isNumeric ? (
-                    <input 
-                      type="checkbox" 
-                      id={`tick-${stateKey}`}
-                      checked={state.isTicked}
-                      disabled={state.saving}
-                      onChange={(e) => handleToggleUnit(item.id, unit.id, e.target.checked)}
-                      className="w-5 h-5 text-emerald-600 focus:ring-emerald-500 border-slate-300 rounded cursor-pointer disabled:opacity-50"
-                    />
-                  ) : (
-                    <div className="w-5 h-5 flex items-center justify-center shrink-0">
-                      {state.isTicked ? (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-50" />
-                      ) : (
-                        <HelpCircle className="w-5 h-5 text-slate-300" />
-                      )}
-                    </div>
-                  )}
-                  <label 
-                    htmlFor={!isNumeric ? `tick-${stateKey}` : undefined} 
-                    className={`text-xs font-bold uppercase tracking-tight select-none ${
-                      !isNumeric ? 'cursor-pointer' : ''
-                    } ${
-                      state.isTicked ? 'text-navy-900' : 'text-slate-500'
-                    }`}
-                  >
-                    {unit.name}
-                  </label>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  {state.saving && (
-                    <div className="w-3.5 h-3.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-                  )}
-                  {state.success && (
-                    <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      {state.success}
-                    </span>
-                  )}
-                  {state.error && (
-                    <span className="text-[9px] text-rose-600 font-semibold" title={state.error}>
-                      Error
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {isNumeric && (
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="relative flex-grow">
-                    <input 
-                      type="number"
-                      min="0"
-                      disabled={state.saving}
-                      value={state.percentage}
-                      onChange={(e) => handleNumberChange(item.id, unit.id, e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSaveNumericUnit(item.id, unit.id, state.percentage, item.targetSteps, item.shineType);
-                        }
-                      }}
-                      placeholder="Enter count"
-                      className="w-full pl-3 pr-8 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-bold bg-white text-navy-900 disabled:opacity-50"
-                    />
-                    {hasTarget && (
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-bold text-slate-400">
-                        /{item.targetSteps}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleSaveNumericUnit(item.id, unit.id, state.percentage, item.targetSteps, item.shineType)}
-                    disabled={state.saving}
-                    className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 shadow-sm border border-indigo-600 transition-colors flex items-center justify-center shrink-0"
-                    title="Save value"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
   // Calculate total ticked items globally
   let totalTickedCount = 0;
   criteria.forEach(c => {
     units.forEach(unit => {
-      const state = formStates[`${c.id}_${unit.id}`];
-      if (state && state.isTicked) {
+      if (isUnitCompleted(c, unit.id)) {
         totalTickedCount++;
       }
     });
@@ -276,32 +169,36 @@ export default function BrightUnitSahityotsavClient({ criteria, initialSubmissio
           <p className="text-slate-400 max-w-md mx-auto text-sm">The Division Admin has not enabled any active criteria for Bright Unit Sahityotsav at the moment.</p>
         </ScaleIn>
       ) : (
-        <StaggerContainer className="grid grid-cols-1 gap-8 animate-fade-in">
-          {criteria.filter(c => !c.parentId).map((parentItem) => {
-            const subItems = criteria.filter(c => c.parentId === parentItem.id);
-            let parentCompletedCount = 0;
+        <StaggerContainer className="grid grid-cols-1 gap-8">
+          {criteria.map((item) => {
+            let completedCount = 0;
             units.forEach(unit => {
-              const state = formStates[`${parentItem.id}_${unit.id}`];
-              if (state && state.isTicked) {
-                parentCompletedCount++;
+              if (isUnitCompleted(item, unit.id)) {
+                completedCount++;
               }
             });
-            const parentLivePercentage = getCriteriaLivePercentage(parentItem);
+            const livePercentage = getCriteriaLivePercentage(item);
 
             return (
-              <ScaleIn key={parentItem.id} className="card-premium flex flex-col justify-between relative overflow-hidden group w-full space-y-6">
+              <ScaleIn key={item.id} className="card-premium flex flex-col justify-between relative overflow-hidden group w-full">
                 <div className="space-y-6">
-                  {/* Parent Question Header */}
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="space-y-1.5">
-                      <h3 className="text-xl font-bold text-navy-900 uppercase tracking-tight leading-none">{parentItem.name}</h3>
-                      <div className="flex items-center gap-2 pt-0.5">
+                      <h3 className="text-xl font-bold text-navy-900 uppercase tracking-tight leading-none">{item.name}</h3>
+                      <div className="flex gap-2 items-center flex-wrap pt-1">
                         <span className="text-[9px] px-2.5 py-1 rounded bg-emerald-50 text-emerald-600 font-semibold uppercase tracking-wider border border-emerald-100">
                           Bright Unit Sahityotsav
                         </span>
-                        {parentItem.shineType === 'NUMBER' && parentItem.targetSteps && (
-                          <span className="text-[9px] px-2.5 py-1 rounded bg-amber-50 text-amber-700 font-bold uppercase tracking-wider border border-amber-100 flex items-center gap-1">
-                            Goal: {parentItem.targetSteps} Steps
+                        {item.shineType === 'NUMBER' && item.targetSteps && (
+                          <span className="text-[9px] px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 font-bold uppercase tracking-wider border border-indigo-100 flex items-center gap-1">
+                            <Star className="w-3 h-3 text-indigo-500 fill-indigo-500 shrink-0" />
+                            Target: {item.targetSteps} Steps
+                          </span>
+                        )}
+                        {item.shineType === 'TEXT' && (
+                          <span className="text-[9px] px-2.5 py-1 rounded bg-sky-50 text-sky-700 font-bold uppercase tracking-wider border border-sky-100 flex items-center gap-1">
+                            <FileText className="w-3 h-3 text-sky-500 shrink-0" />
+                            Short Answer Mode
                           </span>
                         )}
                       </div>
@@ -309,84 +206,142 @@ export default function BrightUnitSahityotsavClient({ criteria, initialSubmissio
 
                     <div className="flex items-center gap-4">
                       <div className="px-4 py-2 bg-emerald-50/50 border border-emerald-100 rounded-lg text-right shrink-0">
-                        <span className="text-sm font-bold text-emerald-700 leading-none">{parentLivePercentage}%</span>
+                        <span className="text-sm font-bold text-emerald-700 leading-none">{livePercentage}%</span>
                         <span className="text-[10px] text-slate-500 font-medium"> Completed</span>
                       </div>
                       <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-right shrink-0">
-                        <span className="text-lg font-bold text-navy-900 leading-none">{parentCompletedCount} / {units.length}</span>
+                        <span className="text-lg font-bold text-navy-900 leading-none">{completedCount} / {units.length}</span>
                         <span className="text-[10px] text-slate-400 font-medium"> Units Done</span>
                       </div>
                     </div>
                   </div>
 
-                  {parentItem.description && (
-                    <p className="text-slate-400 text-xs leading-relaxed font-normal">{parentItem.description}</p>
+                  {item.description && (
+                    <p className="text-slate-400 text-xs leading-relaxed font-normal">{item.description}</p>
                   )}
 
-                  {/* Checklist for Parent */}
-                  <div className="space-y-4 pt-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-navy-900 uppercase tracking-wider">Parent Checklist</h4>
-                      {parentItem.shineType === 'TICK' && (
-                        <span className="text-[10px] text-emerald-600 font-medium tracking-tight">Auto-saves instantly</span>
-                      )}
-                    </div>
-                    {renderChecklist(parentItem)}
-                  </div>
-                </div>
-
-                {/* Nested Sub-questions */}
-                {subItems.length > 0 && (
-                  <div className="space-y-6 pt-6 border-t border-slate-100/80 bg-slate-50/30 -mx-6 -mb-6 p-6">
-                    <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-2">
-                      <Award className="w-4 h-4 text-indigo-500" />
-                      Nested Sub-Questions
+                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-3">
+                    <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+                      <HelpCircle className="w-3.5 h-3.5 text-indigo-600" />
+                      Grading Standard
                     </h4>
-                    <div className="space-y-6">
-                      {subItems.map((subItem) => {
-                        let subCompletedCount = 0;
-                        units.forEach(unit => {
-                          const state = formStates[`${subItem.id}_${unit.id}`];
-                          if (state && state.isTicked) {
-                            subCompletedCount++;
-                          }
-                        });
+                    {item.shineType === 'NUMBER' ? (
+                      <p className="text-[10px] font-semibold text-emerald-700 uppercase leading-none">
+                        Goal-based unit scoring! For each unit, input a value that meets or exceeds <span className="font-bold text-emerald-800">{item.targetSteps} steps</span> to count that unit as completed. Overall grade score scales by total completed units.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-5 gap-1.5 text-center text-[9px] font-semibold text-navy-900 uppercase">
+                        <div className="p-1.5 bg-white rounded-lg border border-slate-100">20% Units completed &rarr; 5m</div>
+                        <div className="p-1.5 bg-white rounded-lg border border-slate-100">40% Units completed &rarr; 10m</div>
+                        <div className="p-1.5 bg-white rounded-lg border border-slate-100">60% Units completed &rarr; 15m</div>
+                        <div className="p-1.5 bg-white rounded-lg border border-slate-100">80% Units completed &rarr; 20m</div>
+                        <div className="p-1.5 bg-white rounded-lg border border-slate-100">100% Units completed &rarr; 25m</div>
+                      </div>
+                    )}
+                  </div>
 
-                        return (
-                          <div key={subItem.id} className="space-y-4 bg-white p-5 rounded-2xl border border-slate-100/80 shadow-sm transition-all duration-300 hover:border-slate-200">
-                            {/* Sub-question Header */}
-                            <div className="flex items-start justify-between gap-4 flex-wrap">
-                              <div className="space-y-1">
-                                <h5 className="text-sm font-bold text-navy-900 uppercase tracking-tight">{subItem.name}</h5>
-                                <div className="flex gap-2 items-center flex-wrap pt-0.5">
-                                  <span className="text-[8px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold uppercase tracking-wider border border-slate-200">
-                                    ↳ Sub-Question
-                                  </span>
-                                  {subItem.shineType === 'NUMBER' && subItem.targetSteps && (
-                                    <span className="text-[8px] px-2 py-0.5 rounded bg-amber-50 text-amber-700 font-bold uppercase tracking-wider border border-amber-100">
-                                      Goal: {subItem.targetSteps} Steps
+                  <div className="space-y-4 pt-4 border-t border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-navy-900 uppercase tracking-wider">Units Completion Checklist</h4>
+                      <span className="text-[10px] text-indigo-600 font-semibold uppercase tracking-wider animate-pulse">Changes auto-save instantly</span>
+                    </div>
+                    
+                    {units.length === 0 ? (
+                      <p className="text-slate-400 text-xs italic">No units registered under your sector yet.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {units.map((unit) => {
+                          const stateKey = `${item.id}_${unit.id}`;
+                          const state = formStates[stateKey] || { percentage: 100, isTicked: false, saving: false, error: '', success: '' };
+                          const targetReached = item.shineType === 'NUMBER' && item.targetSteps && state.percentage >= item.targetSteps;
+
+                          return (
+                            <div 
+                              key={unit.id} 
+                              className={`p-4 border rounded-2xl transition-all duration-300 flex flex-col gap-3 justify-between ${
+                                state.isTicked 
+                                  ? (targetReached || item.shineType !== 'NUMBER' ? 'bg-emerald-50/45 border-emerald-100/80 shadow-sm shadow-emerald-50' : 'bg-rose-50/30 border-rose-100')
+                                  : 'bg-slate-50/40 border-slate-100 hover:border-slate-200'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-4 w-full">
+                                <div className="flex items-center gap-3">
+                                  <input 
+                                    type="checkbox" 
+                                    id={`tick-${stateKey}`}
+                                    checked={state.isTicked}
+                                    disabled={state.saving}
+                                    onChange={(e) => handleToggleUnit(item.id, unit.id, e.target.checked)}
+                                    className="w-5 h-5 text-emerald-600 focus:ring-emerald-500 border-slate-300 rounded cursor-pointer disabled:opacity-50"
+                                  />
+                                  <label 
+                                    htmlFor={`tick-${stateKey}`} 
+                                    className={`text-xs font-bold uppercase tracking-tight select-none cursor-pointer ${
+                                      state.isTicked ? 'text-navy-900' : 'text-slate-500'
+                                    }`}
+                                  >
+                                    {unit.name}
+                                  </label>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {state.saving && (
+                                    <div className="w-3.5 h-3.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                                  )}
+                                  {state.success && (
+                                    <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest flex items-center gap-1">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                      {state.success}
+                                    </span>
+                                  )}
+                                  {state.error && (
+                                    <span className="text-[9px] text-rose-600 font-bold uppercase" title={state.error}>
+                                      Error
                                     </span>
                                   )}
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-3">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{subCompletedCount} / {units.length} Units Met</span>
-                              </div>
+                              {state.isTicked && item.shineType === 'NUMBER' && (
+                                <div className="flex items-center gap-2 pl-8 animate-fade-in w-full flex-wrap">
+                                  <input 
+                                    type="number"
+                                    min="0"
+                                    value={state.percentage}
+                                    disabled={state.saving}
+                                    onChange={(e) => {
+                                      let val = parseInt(e.target.value) || 0;
+                                      if (val < 0) val = 0;
+                                      updateFormState(stateKey, { percentage: val });
+                                    }}
+                                    className="w-20 px-2 py-1 text-center font-bold border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-600 bg-white"
+                                    placeholder="Value"
+                                  />
+                                  <button
+                                    onClick={() => handleSaveNumberUnit(item.id, unit.id)}
+                                    disabled={state.saving}
+                                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9px] uppercase tracking-wider font-bold transition-all flex items-center gap-1 shrink-0 shadow-sm"
+                                  >
+                                    <Save className="w-3 h-3" /> Save
+                                  </button>
+                                  {item.targetSteps && (
+                                    <span className={`text-[8px] font-bold px-2 py-1 rounded uppercase tracking-wider border ${
+                                      targetReached 
+                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                                        : 'bg-rose-50/70 text-rose-600 border-rose-100/50'
+                                    }`}>
+                                      {targetReached ? '🏆 Reached' : `Target: ${item.targetSteps}`}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
-
-                            {subItem.description && (
-                              <p className="text-slate-400 text-[11px] leading-relaxed font-normal">{subItem.description}</p>
-                            )}
-
-                            {/* Sub Checklist */}
-                            {renderChecklist(subItem)}
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </ScaleIn>
             );
           })}

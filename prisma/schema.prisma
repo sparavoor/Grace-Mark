@@ -80,9 +80,6 @@ model GraceMarkCriteria {
   isActive    Boolean                @default(true)
   targetSteps Int?                   // Number of steps required specifically for SHINE_SECTOR criteria
   shineType   String?                @default("TICK") // TICK, NUMBER, TEXT
-  parentId    String?
-  parent      GraceMarkCriteria?     @relation("SubQuestions", fields: [parentId], references: [id], onDelete: Cascade)
-  subQuestions GraceMarkCriteria[]    @relation("SubQuestions")
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @updatedAt
   submissions GraceMarkSubmission[]

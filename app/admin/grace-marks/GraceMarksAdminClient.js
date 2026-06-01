@@ -12,7 +12,6 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
   const [description, setDescription] = useState('');
   const [targetSteps, setTargetSteps] = useState('');
   const [shineType, setShineType] = useState('TICK');
-  const [parentId, setParentId] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -30,13 +29,12 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
     formData.append('type', type);
     formData.append('description', description);
     formData.append('isActive', isActive ? 'true' : 'false');
-    formData.append('shineType', shineType);
-    if (shineType === 'NUMBER' && targetSteps !== '') {
+    formData.append('shineType', (type === 'SHINE_SECTOR' || type === 'BRIGHT_UNIT_SAHITYOTSAV' || type === 'UNIT_SAHITYOTSAV') ? shineType : 'TICK');
+    if ((type === 'SHINE_SECTOR' || type === 'BRIGHT_UNIT_SAHITYOTSAV' || type === 'UNIT_SAHITYOTSAV') && shineType === 'NUMBER' && targetSteps !== '') {
       formData.append('targetSteps', targetSteps);
     } else {
       formData.append('targetSteps', '');
     }
-    formData.append('parentId', parentId);
 
     if (editingId) {
       const result = await updateGraceMarkCriteria(editingId, formData);
@@ -71,7 +69,6 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
     setIsActive(item.isActive);
     setShineType(item.shineType || 'TICK');
     setTargetSteps(item.targetSteps !== null && item.targetSteps !== undefined ? String(item.targetSteps) : '');
-    setParentId(item.parentId || '');
   }
 
   function cancelEdit() {
@@ -81,7 +78,6 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
     setDescription('');
     setTargetSteps('');
     setShineType('TICK');
-    setParentId('');
     setIsActive(true);
   }
 
@@ -133,87 +129,6 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
     UNIT_SAHITYOTSAV: 15,
     BRIGHT_UNIT_SAHITYOTSAV: 25,
     SHINE_SECTOR: 20
-  };
-
-  const renderCriteriaCard = (item, isSub = false) => {
-    return (
-      <div key={item.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 border rounded-2xl hover:shadow-md transition-all gap-4 ${
-        isSub ? 'ml-8 bg-slate-50/40 border-dashed border-slate-200' : 'bg-white border-slate-100 hover:border-slate-200'
-      } ${
-        editingId === item.id 
-          ? 'border-indigo-600 bg-indigo-50/10 shadow-sm shadow-indigo-100' 
-          : ''
-      }`}>
-        <div className="space-y-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            {isSub && (
-              <span className="text-[9px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold uppercase tracking-wider border border-slate-200 flex items-center gap-1">
-                ↳ Sub-Question
-              </span>
-            )}
-            <h3 className="font-bold text-navy-900 text-base uppercase leading-none">{item.name}</h3>
-            <span className="text-[9px] px-2.5 py-1 rounded bg-indigo-50 text-indigo-600 font-semibold uppercase tracking-wider border border-indigo-100">
-              {typeLabels[item.type]}
-            </span>
-            {item.shineType && item.shineType !== 'TICK' && (
-              <span className="text-[9px] px-2.5 py-1 rounded bg-slate-50 text-slate-600 font-bold uppercase tracking-wider border border-slate-100">
-                {shineTypeLabels[item.shineType || 'TICK']}
-              </span>
-            )}
-            {item.shineType === 'NUMBER' && item.targetSteps !== null && (
-              <span className="text-[9px] px-2.5 py-1 rounded bg-amber-50 text-amber-700 font-bold uppercase tracking-wider border border-amber-100">
-                Goal: {item.targetSteps} Target
-              </span>
-            )}
-            <span className="text-[9px] px-2.5 py-1 rounded bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border border-slate-100">
-              Max: {typeMaxMarks[item.type]} Marks
-            </span>
-          </div>
-          {item.description && (
-            <p className="text-slate-400 text-xs font-normal leading-relaxed">{item.description}</p>
-          )}
-        </div>
-
-        <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
-          {/* Tick Toggle (Option to Tick / Activate) */}
-          <button 
-            onClick={() => handleToggleActive(item.id, item.isActive)}
-            className="flex items-center gap-2 group"
-            title={item.isActive ? 'Tick Active (Click to Untick)' : 'Tick Inactive (Click to Tick)'}
-          >
-            {item.isActive ? (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-lg text-emerald-600 text-[10px] font-bold uppercase tracking-wider">
-                <Check className="w-3.5 h-3.5" />
-                Active (Ticked)
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-                <X className="w-3.5 h-3.5" />
-                Inactive
-              </div>
-            )}
-          </button>
-
-          {/* Edit Button */}
-          <button 
-            onClick={() => startEdit(item)}
-            className="p-2 text-slate-300 hover:text-indigo-600 transition-colors bg-slate-50 hover:bg-indigo-50 rounded-lg border border-slate-100 hover:border-indigo-100"
-            title="Edit Criteria"
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-
-          {/* Delete */}
-          <button 
-            onClick={() => handleDelete(item.id)}
-            className="p-2 text-slate-300 hover:text-rose-600 transition-colors bg-slate-50 hover:bg-rose-50 rounded-lg border border-slate-100 hover:border-rose-100"
-            title="Delete Criteria"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -272,10 +187,7 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Criteria Type</label>
                 <select 
                   value={type} 
-                  onChange={(e) => {
-                    setType(e.target.value);
-                    setParentId('');
-                  }}
+                  onChange={(e) => setType(e.target.value)}
                   className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-600 font-medium bg-white"
                 >
                   <option value="UNIT_SAHITYOTSAV">Unit Sahityotsav (Max 15 Marks)</option>
@@ -284,52 +196,37 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
                 </select>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Parent Question (Optional)</label>
-                <select 
-                  value={parentId} 
-                  onChange={(e) => setParentId(e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-600 font-medium bg-white text-navy-900"
-                >
-                  <option value="">None (Top Level Question)</option>
-                  {criteria
-                    .filter(c => c.type === type && !c.parentId && c.id !== editingId)
-                    .map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))
-                  }
-                </select>
-              </div>
-
-              <div className="animate-fade-in p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-4">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-navy-800 mb-2">Evaluate Mode</label>
-                  <select 
-                    value={shineType} 
-                    onChange={(e) => setShineType(e.target.value)}
-                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-600 font-medium bg-white text-navy-900"
-                  >
-                    <option value="TICK">Simple Checkbox Tick</option>
-                    <option value="NUMBER">Number Input (Target Goal)</option>
-                    <option value="TEXT">Short Answer Text Input</option>
-                  </select>
-                </div>
-
-                {shineType === 'NUMBER' && (
-                  <div className="animate-fade-in space-y-2">
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-amber-800 mb-1">Target steps / threshold required</label>
-                    <input 
-                      type="number" 
-                      min="1"
-                      placeholder="e.g. 5"
-                      value={targetSteps} 
-                      onChange={(e) => setTargetSteps(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-amber-200 rounded-xl text-sm focus:outline-none focus:border-amber-600 font-bold bg-white text-navy-900"
-                      required={shineType === 'NUMBER'}
-                    />
+              {(type === 'SHINE_SECTOR' || type === 'BRIGHT_UNIT_SAHITYOTSAV' || type === 'UNIT_SAHITYOTSAV') && (
+                <div className="animate-fade-in p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-navy-800 mb-2">Evaluation Mode</label>
+                    <select 
+                      value={shineType} 
+                      onChange={(e) => setShineType(e.target.value)}
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-600 font-medium bg-white text-navy-900"
+                    >
+                      <option value="TICK">Simple Checkbox Tick</option>
+                      <option value="NUMBER">Number Input - Steps Goal (Threshold-based)</option>
+                      <option value="TEXT">Short Answer text Input</option>
+                    </select>
                   </div>
-                )}
-              </div>
+
+                  {shineType === 'NUMBER' && (
+                    <div className="animate-fade-in space-y-2">
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-amber-800 mb-1">Target Steps Required</label>
+                      <input 
+                        type="number" 
+                        min="1"
+                        placeholder="e.g. 5"
+                        value={targetSteps} 
+                        onChange={(e) => setTargetSteps(e.target.value)}
+                        className="w-full px-4 py-2.5 border border-amber-200 rounded-xl text-sm focus:outline-none focus:border-amber-600 font-bold bg-white text-navy-900"
+                        required={shineType === 'NUMBER'}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Description</label>
@@ -391,16 +288,78 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
                 <p className="text-slate-400 text-sm font-medium">No grace criteria defined yet.</p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {criteria.filter(c => !c.parentId).map((item) => {
-                  const subItems = criteria.filter(c => c.parentId === item.id);
-                  return (
-                    <div key={item.id} className="space-y-3">
-                      {renderCriteriaCard(item, false)}
-                      {subItems.map(subItem => renderCriteriaCard(subItem, true))}
+              <div className="space-y-4">
+                {criteria.map((item) => (
+                  <div key={item.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 border rounded-2xl hover:shadow-md transition-all gap-4 ${
+                    editingId === item.id 
+                      ? 'border-indigo-600 bg-indigo-50/10 shadow-sm shadow-indigo-100' 
+                      : 'border-slate-100 hover:border-slate-200 bg-white'
+                  }`}>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <h3 className="font-bold text-navy-900 text-base uppercase leading-none">{item.name}</h3>
+                        <span className="text-[9px] px-2.5 py-1 rounded bg-indigo-50 text-indigo-600 font-semibold uppercase tracking-wider border border-indigo-100">
+                          {typeLabels[item.type]}
+                        </span>
+                        {(item.type === 'SHINE_SECTOR' || item.type === 'BRIGHT_UNIT_SAHITYOTSAV' || item.type === 'UNIT_SAHITYOTSAV') && (
+                          <span className="text-[9px] px-2.5 py-1 rounded bg-slate-50 text-slate-600 font-bold uppercase tracking-wider border border-slate-100">
+                            {shineTypeLabels[item.shineType || 'TICK']}
+                          </span>
+                        )}
+                        {(item.type === 'SHINE_SECTOR' || item.type === 'BRIGHT_UNIT_SAHITYOTSAV' || item.type === 'UNIT_SAHITYOTSAV') && item.shineType === 'NUMBER' && item.targetSteps !== null && (
+                          <span className="text-[9px] px-2.5 py-1 rounded bg-amber-50 text-amber-700 font-bold uppercase tracking-wider border border-amber-100">
+                            Goal: {item.targetSteps} Steps Required
+                          </span>
+                        )}
+                        <span className="text-[9px] px-2.5 py-1 rounded bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border border-slate-100">
+                          Max: {typeMaxMarks[item.type]} Marks
+                        </span>
+                      </div>
+                      {item.description && (
+                        <p className="text-slate-400 text-xs font-normal leading-relaxed">{item.description}</p>
+                      )}
                     </div>
-                  );
-                })}
+
+                    <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                      {/* Tick Toggle (Option to Tick / Activate) */}
+                      <button 
+                        onClick={() => handleToggleActive(item.id, item.isActive)}
+                        className="flex items-center gap-2 group"
+                        title={item.isActive ? 'Tick Active (Click to Untick)' : 'Tick Inactive (Click to Tick)'}
+                      >
+                        {item.isActive ? (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-lg text-emerald-600 text-[10px] font-bold uppercase tracking-wider">
+                            <Check className="w-3.5 h-3.5" />
+                            Active (Ticked)
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+                            <X className="w-3.5 h-3.5" />
+                            Inactive
+                          </div>
+                        )}
+                      </button>
+
+                      {/* Edit Button */}
+                      <button 
+                        onClick={() => startEdit(item)}
+                        className="p-2 text-slate-300 hover:text-indigo-600 transition-colors bg-slate-50 hover:bg-indigo-50 rounded-lg border border-slate-100 hover:border-indigo-100"
+                        title="Edit Criteria"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+
+                      {/* Delete */}
+                      <button 
+                        onClick={() => handleDelete(item.id)}
+                        className="p-2 text-slate-300 hover:text-rose-600 transition-colors bg-slate-50 hover:bg-rose-50 rounded-lg border border-slate-100 hover:border-rose-100"
+                        title="Delete Criteria"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
