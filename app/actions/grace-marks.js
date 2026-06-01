@@ -57,6 +57,8 @@ export async function createGraceMarkCriteria(formData) {
   const targetStepsRaw = formData.get('targetSteps');
   const targetSteps = targetStepsRaw ? parseInt(targetStepsRaw) || null : null;
   const shineType = formData.get('shineType') || 'TICK';
+  const parentIdRaw = formData.get('parentId');
+  const parentId = parentIdRaw && parentIdRaw !== '' ? parentIdRaw : null;
 
   if (!name || !type) return { error: 'Name and Type are required' };
 
@@ -68,7 +70,8 @@ export async function createGraceMarkCriteria(formData) {
         description,
         isActive,
         targetSteps,
-        shineType
+        shineType,
+        parentId
       }
     });
 
@@ -127,6 +130,8 @@ export async function updateGraceMarkCriteria(id, formData) {
   const targetStepsRaw = formData.get('targetSteps');
   const targetSteps = targetStepsRaw ? parseInt(targetStepsRaw) || null : null;
   const shineType = formData.get('shineType') || 'TICK';
+  const parentIdRaw = formData.get('parentId');
+  const parentId = parentIdRaw && parentIdRaw !== '' ? parentIdRaw : null;
 
   if (!name || !type) return { error: 'Name and Type are required' };
 
@@ -139,7 +144,8 @@ export async function updateGraceMarkCriteria(id, formData) {
         description,
         isActive,
         targetSteps,
-        shineType
+        shineType,
+        parentId
       }
     });
 

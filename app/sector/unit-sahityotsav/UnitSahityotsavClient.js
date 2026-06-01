@@ -25,7 +25,7 @@ export default function UnitSahityotsavClient({ criteria, initialSubmissions, un
         const key = `${c.id}_${unit.id}`;
         const existing = initialMap[key];
         states[key] = {
-          percentage: 100,
+          percentage: existing ? existing.percentage : (c.shineType === 'NUMBER' ? 0 : 100),
           isTicked: existing ? existing.isTicked : false,
           saving: false,
           error: '',
@@ -73,7 +73,7 @@ export default function UnitSahityotsavClient({ criteria, initialSubmissions, un
     const key = `${criteriaId}_${unitId}`;
     updateFormState(key, { isTicked: checked, error: '', success: '', saving: true });
 
-    const result = await submitSectorGraceMarks(criteriaId, 100, checked, unitId);
+    const result = await submitSectorGraceMarks(criteriaId, checked ? 100 : 0, checked, unitId);
     
     if (result.error) {
       updateFormState(key, { error: result.error, saving: false, isTicked: !checked });
@@ -88,6 +88,37 @@ export default function UnitSahityotsavClient({ criteria, initialSubmissions, un
     }
   }
 
+  async function handleSaveNumericUnit(criteriaId, unitId, value, targetSteps, shineType) {
+    const key = `${criteriaId}_${unitId}`;
+    const numVal = parseInt(value) || 0;
+    const hasTarget = shineType === 'NUMBER' && targetSteps !== null && targetSteps > 0;
+    const isTicked = hasTarget ? (numVal >= targetSteps) : (numVal > 0);
+
+    updateFormState(key, { saving: true, error: '', success: '' });
+
+    const result = await submitSectorGraceMarks(criteriaId, numVal, isTicked, unitId);
+
+    if (result.error) {
+      updateFormState(key, { error: result.error, saving: false });
+    } else {
+      updateFormState(key, { 
+        percentage: numVal,
+        isTicked: isTicked,
+        success: 'Saved!', 
+        saving: false 
+      });
+      setTimeout(() => {
+        updateFormState(key, { success: '' });
+      }, 2000);
+    }
+  }
+
+  function handleNumberChange(criteriaId, unitId, value) {
+    const key = `${criteriaId}_${unitId}`;
+    const numVal = value === '' ? '' : parseInt(value) || 0;
+    updateFormState(key, { percentage: numVal });
+  }
+
   function updateFormState(key, updates) {
     setFormStates(prev => ({
       ...prev,
@@ -97,6 +128,115 @@ export default function UnitSahityotsavClient({ criteria, initialSubmissions, un
       }
     }));
   }
+
+  const renderChecklist = (item) => {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {units.map((unit) => {
+          const stateKey = `${item.id}_${unit.id}`;
+          const state = formStates[stateKey] || { percentage: 0, isTicked: false, saving: false, error: '', success: '' };
+          const isNumeric = item.shineType === 'NUMBER';
+          const hasTarget = isNumeric && item.targetSteps !== null && item.targetSteps > 0;
+          const targetReached = isNumeric && (hasTarget ? state.percentage >= item.targetSteps : state.percentage > 0);
+
+          return (
+            <div 
+              key={unit.id} 
+              className={`p-4 border rounded-2xl transition-all duration-300 flex flex-col justify-between gap-3 ${
+                state.isTicked 
+                  ? 'bg-emerald-50/45 border-emerald-100/80 shadow-sm shadow-emerald-50' 
+                  : 'bg-slate-50/45 border-slate-100 hover:border-slate-200'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  {!isNumeric ? (
+                    <input 
+                      type="checkbox" 
+                      id={`tick-${stateKey}`}
+                      checked={state.isTicked}
+                      disabled={state.saving}
+                      onChange={(e) => handleToggleUnit(item.id, unit.id, e.target.checked)}
+                      className="w-5 h-5 text-indigo-650 focus:ring-indigo-500 border-slate-300 rounded cursor-pointer disabled:opacity-50"
+                    />
+                  ) : (
+                    <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                      {state.isTicked ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-50" />
+                      ) : (
+                        <HelpCircle className="w-5 h-5 text-slate-300" />
+                      )}
+                    </div>
+                  )}
+                  <label 
+                    htmlFor={!isNumeric ? `tick-${stateKey}` : undefined} 
+                    className={`text-xs font-bold uppercase tracking-tight select-none ${
+                      !isNumeric ? 'cursor-pointer' : ''
+                    } ${
+                      state.isTicked ? 'text-navy-900' : 'text-slate-500'
+                    }`}
+                  >
+                    {unit.name}
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {state.saving && (
+                    <div className="w-3.5 h-3.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {state.success && (
+                    <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      {state.success}
+                    </span>
+                  )}
+                  {state.error && (
+                    <span className="text-[9px] text-rose-600 font-semibold" title={state.error}>
+                      Error
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {isNumeric && (
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="relative flex-grow">
+                    <input 
+                      type="number"
+                      min="0"
+                      disabled={state.saving}
+                      value={state.percentage}
+                      onChange={(e) => handleNumberChange(item.id, unit.id, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSaveNumericUnit(item.id, unit.id, state.percentage, item.targetSteps, item.shineType);
+                        }
+                      }}
+                      placeholder="Enter count"
+                      className="w-full pl-3 pr-8 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-bold bg-white text-navy-900 disabled:opacity-50"
+                    />
+                    {hasTarget && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-bold text-slate-400">
+                        /{item.targetSteps}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleSaveNumericUnit(item.id, unit.id, state.percentage, item.targetSteps, item.shineType)}
+                    disabled={state.saving}
+                    className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 shadow-sm border border-indigo-600 transition-colors flex items-center justify-center shrink-0"
+                    title="Save value"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   // Calculate total ticked items globally
   let totalTickedCount = 0;
@@ -135,122 +275,117 @@ export default function UnitSahityotsavClient({ criteria, initialSubmissions, un
           <p className="text-slate-400 max-w-md mx-auto text-sm">The Division Admin has not enabled any active criteria for Unit Sahityotsav at the moment.</p>
         </ScaleIn>
       ) : (
-        <StaggerContainer className="grid grid-cols-1 gap-8">
-          {criteria.map((item) => {
-            let completedCount = 0;
+        <StaggerContainer className="grid grid-cols-1 gap-8 animate-fade-in">
+          {criteria.filter(c => !c.parentId).map((parentItem) => {
+            const subItems = criteria.filter(c => c.parentId === parentItem.id);
+            let parentCompletedCount = 0;
             units.forEach(unit => {
-              const state = formStates[`${item.id}_${unit.id}`];
+              const state = formStates[`${parentItem.id}_${unit.id}`];
               if (state && state.isTicked) {
-                completedCount++;
+                parentCompletedCount++;
               }
             });
-            const livePercentage = getCriteriaLivePercentage(item);
+            const parentLivePercentage = getCriteriaLivePercentage(parentItem);
 
             return (
-              <ScaleIn key={item.id} className="card-premium flex flex-col justify-between relative overflow-hidden group w-full">
+              <ScaleIn key={parentItem.id} className="card-premium flex flex-col justify-between relative overflow-hidden group w-full space-y-6">
                 <div className="space-y-6">
+                  {/* Parent Question Header */}
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="space-y-1.5">
-                      <h3 className="text-xl font-bold text-navy-900 uppercase tracking-tight leading-none">{item.name}</h3>
-                      <span className="text-[9px] px-2.5 py-1 rounded bg-indigo-50 text-indigo-600 font-semibold uppercase tracking-wider border border-indigo-100">
-                        Unit Sahityotsav
-                      </span>
+                      <h3 className="text-xl font-bold text-navy-900 uppercase tracking-tight leading-none">{parentItem.name}</h3>
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <span className="text-[9px] px-2.5 py-1 rounded bg-indigo-50 text-indigo-600 font-semibold uppercase tracking-wider border border-indigo-100">
+                          Unit Sahityotsav
+                        </span>
+                        {parentItem.shineType === 'NUMBER' && parentItem.targetSteps && (
+                          <span className="text-[9px] px-2.5 py-1 rounded bg-amber-50 text-amber-700 font-bold uppercase tracking-wider border border-amber-100 flex items-center gap-1">
+                            Goal: {parentItem.targetSteps} Steps
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-4">
                       <div className="px-4 py-2 bg-indigo-50/50 border border-indigo-100 rounded-lg text-right shrink-0">
-                        <span className="text-sm font-bold text-indigo-700 leading-none">{livePercentage}%</span>
+                        <span className="text-sm font-bold text-indigo-700 leading-none">{parentLivePercentage}%</span>
                         <span className="text-[10px] text-slate-500 font-medium"> Completed</span>
                       </div>
                       <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-right shrink-0">
-                        <span className="text-lg font-bold text-navy-900 leading-none">{completedCount} / {units.length}</span>
+                        <span className="text-lg font-bold text-navy-900 leading-none">{parentCompletedCount} / {units.length}</span>
                         <span className="text-[10px] text-slate-400 font-medium"> Units Done</span>
                       </div>
                     </div>
                   </div>
 
-                  {item.description && (
-                    <p className="text-slate-400 text-xs leading-relaxed font-normal">{item.description}</p>
+                  {parentItem.description && (
+                    <p className="text-slate-400 text-xs leading-relaxed font-normal">{parentItem.description}</p>
                   )}
 
-                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-3">
-                    <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 leading-none">
-                      <HelpCircle className="w-3.5 h-3.5 text-indigo-600" />
-                      Grading Standard
-                    </h4>
-                    <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-semibold text-navy-900 uppercase">
-                      <div className="p-2 bg-white rounded-lg border border-slate-100">70% Units completed &rarr; 5m</div>
-                      <div className="p-2 bg-white rounded-lg border border-slate-100">80% Units completed &rarr; 8m</div>
-                      <div className="p-2 bg-white rounded-lg border border-slate-100">90% Units completed &rarr; 12m</div>
-                      <div className="p-2 bg-white rounded-lg border border-slate-100">100% Units completed &rarr; 15m</div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 pt-4 border-t border-slate-100">
+                  {/* Checklist for Parent */}
+                  <div className="space-y-4 pt-2">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-navy-900 uppercase tracking-wider">Units Completion Checklist</h4>
-                      <span className="text-[10px] text-indigo-600 font-semibold uppercase tracking-wider animate-pulse">Changes auto-save instantly</span>
+                      <h4 className="text-xs font-bold text-navy-900 uppercase tracking-wider">Parent Checklist</h4>
+                      {parentItem.shineType === 'TICK' && (
+                        <span className="text-[10px] text-indigo-650 font-medium tracking-tight">Auto-saves instantly</span>
+                      )}
                     </div>
-                    
-                    {units.length === 0 ? (
-                      <p className="text-slate-400 text-xs italic">No units registered under your sector yet.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {units.map((unit) => {
-                          const stateKey = `${item.id}_${unit.id}`;
-                          const state = formStates[stateKey] || { percentage: 100, isTicked: false, saving: false, error: '', success: '' };
-
-                          return (
-                            <div 
-                              key={unit.id} 
-                              className={`p-4 border rounded-2xl transition-all duration-300 flex items-center justify-between gap-4 ${
-                                state.isTicked 
-                                  ? 'bg-indigo-50/40 border-indigo-100/80 shadow-sm shadow-indigo-50' 
-                                  : 'bg-slate-50/40 border-slate-100 hover:border-slate-200'
-                              }`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <input 
-                                  type="checkbox" 
-                                  id={`tick-${stateKey}`}
-                                  checked={state.isTicked}
-                                  disabled={state.saving}
-                                  onChange={(e) => handleToggleUnit(item.id, unit.id, e.target.checked)}
-                                  className="w-5 h-5 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded cursor-pointer disabled:opacity-50"
-                                />
-                                <label 
-                                  htmlFor={`tick-${stateKey}`} 
-                                  className={`text-xs font-bold uppercase tracking-tight select-none cursor-pointer ${
-                                    state.isTicked ? 'text-navy-900' : 'text-slate-500'
-                                  }`}
-                                >
-                                  {unit.name}
-                                </label>
-                              </div>
-
-                              <div className="flex items-center gap-2 shrink-0">
-                                {state.saving && (
-                                  <div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-                                )}
-                                {state.success && (
-                                  <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest flex items-center gap-1">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                                    {state.success}
-                                  </span>
-                                )}
-                                {state.error && (
-                                  <span className="text-[9px] text-rose-600 font-semibold" title={state.error}>
-                                    Error
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                    {renderChecklist(parentItem)}
                   </div>
                 </div>
+
+                {/* Nested Sub-questions */}
+                {subItems.length > 0 && (
+                  <div className="space-y-6 pt-6 border-t border-slate-100/80 bg-slate-50/30 -mx-6 -mb-6 p-6">
+                    <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-2">
+                      <Award className="w-4 h-4 text-indigo-500" />
+                      Nested Sub-Questions
+                    </h4>
+                    <div className="space-y-6">
+                      {subItems.map((subItem) => {
+                        let subCompletedCount = 0;
+                        units.forEach(unit => {
+                          const state = formStates[`${subItem.id}_${unit.id}`];
+                          if (state && state.isTicked) {
+                            subCompletedCount++;
+                          }
+                        });
+
+                        return (
+                          <div key={subItem.id} className="space-y-4 bg-white p-5 rounded-2xl border border-slate-100/80 shadow-sm transition-all duration-300 hover:border-slate-200">
+                            {/* Sub-question Header */}
+                            <div className="flex items-start justify-between gap-4 flex-wrap">
+                              <div className="space-y-1">
+                                <h5 className="text-sm font-bold text-navy-900 uppercase tracking-tight">{subItem.name}</h5>
+                                <div className="flex gap-2 items-center flex-wrap pt-0.5">
+                                  <span className="text-[8px] px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold uppercase tracking-wider border border-slate-200">
+                                    ↳ Sub-Question
+                                  </span>
+                                  {subItem.shineType === 'NUMBER' && subItem.targetSteps && (
+                                    <span className="text-[8px] px-2 py-0.5 rounded bg-amber-50 text-amber-700 font-bold uppercase tracking-wider border border-amber-100">
+                                      Goal: {subItem.targetSteps} Steps
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-3">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{subCompletedCount} / {units.length} Units Met</span>
+                              </div>
+                            </div>
+
+                            {subItem.description && (
+                              <p className="text-slate-400 text-[11px] leading-relaxed font-normal">{subItem.description}</p>
+                            )}
+
+                            {/* Sub Checklist */}
+                            {renderChecklist(subItem)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </ScaleIn>
             );
           })}
