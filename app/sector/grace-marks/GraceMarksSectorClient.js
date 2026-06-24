@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Trophy, Check, ShieldAlert, Award, ArrowRight, HelpCircle, Save, CheckCircle2 } from 'lucide-react';
+import { Trophy, Check, ShieldAlert, Award, ArrowRight, HelpCircle, Save, CheckCircle2, Download, FileText } from 'lucide-react';
 import { FadeInUp, ScaleIn, StaggerContainer } from '@/components/Animate';
 import { submitSectorGraceMarks } from '@/app/actions/grace-marks';
 
@@ -48,6 +48,192 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
     });
     return states;
   });
+
+  const handleExportExcel = () => {
+    const headers = ['Criteria Name', 'Type', 'Max Marks', 'Completion Status', 'Estimated Score'];
+    const rows = criteria.map(item => {
+      const isUnitLevel = item.type === 'UNIT_SAHITYOTSAV' || item.type === 'BRIGHT_UNIT_SAHITYOTSAV';
+      const liveMarks = calculateCriteriaLiveMarks(item);
+      const livePct = getCriteriaLivePercentage(item);
+      
+      let statusStr = '';
+      if (isUnitLevel) {
+        let completed = 0;
+        units.forEach(u => {
+          if (formStates[`${item.id}_${u.id}`]?.isTicked) completed++;
+        });
+        statusStr = `${completed} / ${units.length} Units Completed (${livePct}%)`;
+      } else {
+        const stateKey = `${item.id}_sector`;
+        const state = formStates[stateKey];
+        statusStr = state?.isTicked ? `Claimed (${livePct}%)` : 'Not Claimed';
+      }
+      
+      return [
+        item.name,
+        typeLabels[item.type],
+        typeMaxMarks[item.type],
+        statusStr,
+        liveMarks.toFixed(1)
+      ];
+    });
+    
+    let csvContent = "\uFEFF"; // UTF-8 BOM
+    csvContent += [headers.join(','), ...rows.map(row => row.map(val => `"${val}"`).join(','))].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Sector_Gracemarks_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportPDF = () => {
+    const printWindow = window.open('', '_blank');
+    const dateStr = new Date().toLocaleDateString();
+    
+    const rowsHtml = criteria.map(item => {
+      const isUnitLevel = item.type === 'UNIT_SAHITYOTSAV' || item.type === 'BRIGHT_UNIT_SAHITYOTSAV';
+      const liveMarks = calculateCriteriaLiveMarks(item);
+      const livePct = getCriteriaLivePercentage(item);
+      
+      let statusStr = '';
+      if (isUnitLevel) {
+        let completed = 0;
+        units.forEach(u => {
+          if (formStates[`${item.id}_${u.id}`]?.isTicked) completed++;
+        });
+        statusStr = `${completed} / ${units.length} Units (${livePct}%)`;
+      } else {
+        const stateKey = `${item.id}_sector`;
+        const state = formStates[stateKey];
+        statusStr = state?.isTicked ? `Claimed (${livePct}%)` : 'Not Claimed';
+      }
+      
+      return `
+        <tr>
+          <td style="font-weight: 600;">${item.name}</td>
+          <td>${typeLabels[item.type]}</td>
+          <td style="text-align: center;">${typeMaxMarks[item.type]}.0</td>
+          <td style="text-align: center;">${statusStr}</td>
+          <td style="text-align: right;" class="total-cell">${liveMarks.toFixed(1)}</td>
+        </tr>
+      `;
+    }).join('');
+    
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Sector Grace Marks Report</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              color: #1e293b;
+              padding: 40px;
+            }
+            h1 {
+              color: #0f172a;
+              font-size: 24px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              margin-bottom: 5px;
+            }
+            .subtitle {
+              color: #64748b;
+              font-size: 14px;
+              margin-bottom: 30px;
+            }
+            .summary-card {
+              background-color: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 20px;
+              margin-bottom: 30px;
+              font-size: 16px;
+              font-weight: bold;
+              color: #0f172a;
+            }
+            .summary-card span {
+              color: #4f46e5;
+              font-size: 20px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            th, td {
+              border: 1px solid #e2e8f0;
+              padding: 12px 15px;
+              text-align: left;
+            }
+            th {
+              background-color: #f8fafc;
+              color: #475569;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              font-weight: 700;
+            }
+            td {
+              font-size: 13px;
+            }
+            .total-cell {
+              font-weight: bold;
+              color: #4f46e5;
+            }
+            .footer {
+              margin-top: 50px;
+              font-size: 10px;
+              color: #94a3b8;
+              text-align: center;
+              border-top: 1px solid #f1f5f9;
+              padding-top: 20px;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Sector Grace Marks Summary</h1>
+          <div class="subtitle">Generated on ${dateStr} | SSF Pulikkal Division</div>
+          
+          <div class="summary-card">
+            Live Estimated Cumulative Grace Score: <span>${totalLiveMarks.toFixed(1)} / 60.0 Marks</span>
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Criteria Name</th>
+                <th>Type</th>
+                <th style="text-align: center;">Max Marks</th>
+                <th style="text-align: center;">Completion Status</th>
+                <th style="text-align: right;">Estimated Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          
+          <div class="footer">
+            Grace Mark Management System &copy; ${new Date().getFullYear()} - SSF Pulikkal Division. All rights reserved.
+          </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
 
   function getMarksForPercentage(type, percentage) {
     const pct = parseFloat(percentage) || 0;
@@ -192,7 +378,27 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-navy-900 uppercase">
             Grace Marks <span className="text-indigo-600 font-bold">Checklist</span>
           </h1>
-          <p className="text-slate-500 font-normal text-sm mt-1">Check completed Unit Programs. Marks are auto-calculated for the Sector.</p>
+          <div className="flex flex-wrap items-center gap-4 mt-1.5">
+            <p className="text-slate-500 font-normal text-sm">Check completed Unit Programs. Marks are auto-calculated for the Sector.</p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportExcel}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 hover:border-indigo-600 hover:bg-indigo-50/50 rounded-xl text-[10px] font-bold text-slate-500 hover:text-indigo-600 transition-all uppercase tracking-wider font-sans"
+                title="Download Sector Excel Report"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Excel
+              </button>
+              <button
+                onClick={handleExportPDF}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 hover:border-rose-650 hover:bg-rose-50/50 rounded-xl text-[10px] font-bold text-slate-500 hover:text-rose-650 transition-all uppercase tracking-wider font-sans"
+                title="Download Sector PDF / Print Report"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                PDF
+              </button>
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-3 px-6 py-3 bg-navy-900 border border-slate-800 rounded-[10px] text-white font-semibold text-xs shadow-xl shadow-navy-900/20">
           <Trophy className="w-4 h-4 text-amber-400" />

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Trophy, Plus, Check, X, ShieldAlert, Award, FileText, ToggleLeft, ToggleRight, Trash2, Pencil, RotateCcw, HelpCircle } from 'lucide-react';
+import { Trophy, Plus, Check, X, ShieldAlert, Award, FileText, ToggleLeft, ToggleRight, Trash2, Pencil, RotateCcw, HelpCircle, Download } from 'lucide-react';
 import { FadeInUp, ScaleIn, StaggerContainer } from '@/components/Animate';
 import { createGraceMarkCriteria, toggleGraceMarkCriteria, deleteGraceMarkCriteria, updateGraceMarkCriteria } from '@/app/actions/grace-marks';
 
@@ -17,6 +17,144 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  const handleExportExcel = () => {
+    const headers = ['Sector', 'Unit Sahityotsav Score', 'Unit Sahityotsav %', 'Bright Unit Sahityotsav Score', 'Bright Unit Sahityotsav %', 'Shine Sector Score', 'Shine Sector Completed', 'Total Grace Score'];
+    const rows = sectorScores.map(sector => [
+      sector.name,
+      sector.graceMarks.unitSahityotsav.isTicked ? sector.graceMarks.unitSahityotsav.marks : 0,
+      sector.graceMarks.unitSahityotsav.isTicked ? sector.graceMarks.unitSahityotsav.percentage : 0,
+      sector.graceMarks.brightUnitSahityotsav.isTicked ? sector.graceMarks.brightUnitSahityotsav.marks : 0,
+      sector.graceMarks.brightUnitSahityotsav.isTicked ? sector.graceMarks.brightUnitSahityotsav.percentage : 0,
+      sector.graceMarks.shineSector.isTicked ? sector.graceMarks.shineSector.marks : 0,
+      sector.graceMarks.shineSector.isTicked ? sector.graceMarks.shineSector.percentage : 0,
+      sector.graceMarksTotal.toFixed(1)
+    ]);
+    
+    let csvContent = "\uFEFF"; // UTF-8 BOM
+    csvContent += [headers.join(','), ...rows.map(row => row.map(val => `"${val}"`).join(','))].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `SSF_Gracemark_Data_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportPDF = () => {
+    const printWindow = window.open('', '_blank');
+    const dateStr = new Date().toLocaleDateString();
+    
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Gracemark Performance Report - SSF Pulikkal Division</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+              color: #1e293b;
+              padding: 40px;
+            }
+            h1 {
+              color: #0f172a;
+              font-size: 24px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              margin-bottom: 5px;
+            }
+            .subtitle {
+              color: #64748b;
+              font-size: 14px;
+              margin-bottom: 30px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            th, td {
+              border: 1px solid #e2e8f0;
+              padding: 12px 15px;
+              text-align: left;
+            }
+            th {
+              background-color: #f8fafc;
+              color: #475569;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              font-weight: 700;
+            }
+            td {
+              font-size: 13px;
+            }
+            .total-cell {
+              font-weight: bold;
+              color: #4f46e5;
+            }
+            .footer {
+              margin-top: 50px;
+              font-size: 10px;
+              color: #94a3b8;
+              text-align: center;
+              border-top: 1px solid #f1f5f9;
+              padding-top: 20px;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Gracemark Performance Report</h1>
+          <div class="subtitle">Generated on ${dateStr} | SSF Pulikkal Division</div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Sector</th>
+                <th style="text-align: center;">Unit Sahityotsav</th>
+                <th style="text-align: center;">Bright Unit Sahityotsav</th>
+                <th style="text-align: center;">Shine Sector</th>
+                <th style="text-align: right;">Total Grace Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sectorScores.map(sector => `
+                <tr>
+                  <td style="font-weight: 600;">${sector.name} (${sector.unitsCount} Units)</td>
+                  <td style="text-align: center;">
+                    ${sector.graceMarks.unitSahityotsav.isTicked ? `${sector.graceMarks.unitSahityotsav.marks} / 15 (${sector.graceMarks.unitSahityotsav.percentage}%)` : '-'}
+                  </td>
+                  <td style="text-align: center;">
+                    ${sector.graceMarks.brightUnitSahityotsav.isTicked ? `${sector.graceMarks.brightUnitSahityotsav.marks} / 25 (${sector.graceMarks.brightUnitSahityotsav.percentage}%)` : '-'}
+                  </td>
+                  <td style="text-align: center;">
+                    ${sector.graceMarks.shineSector.isTicked ? `${sector.graceMarks.shineSector.marks} / 20 (${sector.graceMarks.shineSector.percentage})` : '-'}
+                  </td>
+                  <td style="text-align: right;" class="total-cell">${sector.graceMarksTotal.toFixed(1)} / 60.0</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <div class="footer">
+            Grace Mark Management System &copy; ${new Date().getFullYear()} - SSF Pulikkal Division. All rights reserved.
+          </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
 
   async function handleSubmitCriteria(e) {
     e.preventDefault();
@@ -368,11 +506,29 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
 
       {/* Sectors Performance Table */}
       <section className="card-premium overflow-hidden p-0">
-        <div className="p-6 border-b border-slate-100">
+        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h2 className="text-xl font-bold text-navy-900 uppercase flex items-center gap-3">
             <Trophy className="w-5 h-5 text-indigo-600" />
             Sectors Grace Marks Performance
           </h2>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExportExcel}
+              className="flex items-center gap-2 px-4 py-2 border border-slate-200 hover:border-indigo-650 hover:bg-indigo-50/50 rounded-xl text-xs font-bold text-slate-650 hover:text-indigo-650 transition-all font-sans uppercase tracking-wider"
+              title="Download Excel Spreadsheet (CSV)"
+            >
+              <Download className="w-4 h-4" />
+              Excel
+            </button>
+            <button
+              onClick={handleExportPDF}
+              className="flex items-center gap-2 px-4 py-2 border border-slate-200 hover:border-rose-650 hover:bg-rose-50/50 rounded-xl text-xs font-bold text-slate-650 hover:text-rose-650 transition-all font-sans uppercase tracking-wider"
+              title="Save as PDF / Print Report"
+            >
+              <FileText className="w-4 h-4" />
+              PDF
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
