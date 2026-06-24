@@ -13,6 +13,7 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
     initialMap[key] = {
       percentage: sub.percentage,
       isTicked: sub.isTicked,
+      textAnswer: sub.textAnswer || '',
       saved: true
     };
   });
@@ -40,6 +41,7 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
         states[key] = {
           percentage: existing ? existing.percentage : 0,
           isTicked: existing ? existing.isTicked : false,
+          textAnswer: existing ? existing.textAnswer : '',
           saving: false,
           error: '',
           success: ''
@@ -50,32 +52,64 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
   });
 
   const handleExportExcel = () => {
-    const headers = ['Criteria Name', 'Type', 'Max Marks', 'Completion Status', 'Estimated Score'];
-    const rows = criteria.map(item => {
+    const headers = ['Criteria Name', 'Type', 'Scope', 'Unit (if unit-level)', 'Status', 'Value completed (Steps/%)', 'Text Answer'];
+    const rows = [];
+    
+    criteria.forEach(item => {
       const isUnitLevel = item.type === 'UNIT_SAHITYOTSAV' || item.type === 'BRIGHT_UNIT_SAHITYOTSAV';
-      const liveMarks = calculateCriteriaLiveMarks(item);
-      const livePct = getCriteriaLivePercentage(item);
+      const typeLabel = typeLabels[item.type] || item.type;
       
-      let statusStr = '';
       if (isUnitLevel) {
-        let completed = 0;
         units.forEach(u => {
-          if (formStates[`${item.id}_${u.id}`]?.isTicked) completed++;
+          const stateKey = `${item.id}_${u.id}`;
+          const state = formStates[stateKey] || { percentage: 100, isTicked: false };
+          const isTicked = state.isTicked;
+          
+          let status = 'Not Completed';
+          if (isTicked) {
+            if (item.shineType === 'NUMBER') {
+              status = item.targetSteps && state.percentage >= item.targetSteps ? 'Target Reached' : 'Below Target';
+            } else {
+              status = 'Completed';
+            }
+          }
+          
+          rows.push([
+            item.name,
+            typeLabel,
+            'Unit Level',
+            u.name,
+            status,
+            item.shineType === 'NUMBER' ? state.percentage : (isTicked ? '100%' : '0%'),
+            '-'
+          ]);
         });
-        statusStr = `${completed} / ${units.length} Units Completed (${livePct}%)`;
       } else {
         const stateKey = `${item.id}_sector`;
-        const state = formStates[stateKey];
-        statusStr = state?.isTicked ? `Claimed (${livePct}%)` : 'Not Claimed';
+        const state = formStates[stateKey] || { percentage: 0, isTicked: false, textAnswer: '' };
+        const isTicked = state.isTicked;
+        const pct = state.percentage;
+        const textAns = state.textAnswer || '';
+        
+        let status = 'Not Claimed';
+        if (isTicked) {
+          if (item.shineType === 'NUMBER') {
+            status = item.targetSteps && pct >= item.targetSteps ? 'Target Reached' : 'Below Target';
+          } else {
+            status = 'Claimed';
+          }
+        }
+        
+        rows.push([
+          item.name,
+          typeLabel,
+          'Sector Level',
+          '-',
+          status,
+          item.shineType === 'NUMBER' ? pct : (isTicked ? '100%' : '0%'),
+          textAns || '-'
+        ]);
       }
-      
-      return [
-        item.name,
-        typeLabels[item.type],
-        typeMaxMarks[item.type],
-        statusStr,
-        liveMarks.toFixed(1)
-      ];
     });
     
     let csvContent = "\uFEFF"; // UTF-8 BOM
@@ -95,94 +129,293 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
     const printWindow = window.open('', '_blank');
     const dateStr = new Date().toLocaleDateString();
     
-    const rowsHtml = criteria.map(item => {
+    const getCriteriaCardHtml = (item) => {
       const isUnitLevel = item.type === 'UNIT_SAHITYOTSAV' || item.type === 'BRIGHT_UNIT_SAHITYOTSAV';
       const liveMarks = calculateCriteriaLiveMarks(item);
       const livePct = getCriteriaLivePercentage(item);
       
-      let statusStr = '';
+      let detailsHtml = '';
+      
       if (isUnitLevel) {
-        let completed = 0;
-        units.forEach(u => {
-          if (formStates[`${item.id}_${u.id}`]?.isTicked) completed++;
-        });
-        statusStr = `${completed} / ${units.length} Units (${livePct}%)`;
+        const unitItemsHtml = units.map(u => {
+          const isTicked = formStates[`${item.id}_${u.id}`]?.isTicked;
+          const statusText = isTicked ? 'Completed' : 'Pending';
+          const statusClass = isTicked ? 'status-success' : 'status-pending';
+          const icon = isTicked ? '✓' : '✗';
+          return (
+            '<div class="unit-item ' + statusClass + '">' +
+              '<span class="unit-icon">' + icon + '</span>' +
+              '<span class="unit-name">' + u.name + '</span>' +
+              '<span class="unit-status">' + statusText + '</span>' +
+            '</div>'
+          );
+        }).join('');
+        
+        detailsHtml = '<div class="units-grid">' + unitItemsHtml + '</div>';
       } else {
         const stateKey = `${item.id}_sector`;
-        const state = formStates[stateKey];
-        statusStr = state?.isTicked ? `Claimed (${livePct}%)` : 'Not Claimed';
+        const state = formStates[stateKey] || { percentage: 0, isTicked: false, textAnswer: '' };
+        const isTicked = state?.isTicked;
+        const textAns = state?.textAnswer || '';
+        
+        let statusText = 'Not Claimed';
+        let statusClass = 'status-pending';
+        if (isTicked) {
+          if (item.shineType === 'NUMBER') {
+            statusText = item.targetSteps && state.percentage >= item.targetSteps 
+              ? 'Target Reached (' + state.percentage + ' steps completed)' 
+              : 'Below Target (' + state.percentage + ' steps completed)';
+            statusClass = item.targetSteps && state.percentage >= item.targetSteps ? 'status-success' : 'status-partial';
+          } else {
+            statusText = 'Claimed';
+            statusClass = 'status-success';
+          }
+        }
+        
+        let textAnsHtml = '';
+        if (isTicked && item.shineType === 'TEXT' && textAns) {
+          textAnsHtml = (
+            '<div class="text-answer-box">' +
+              '<strong>Short Answer Response:</strong>' +
+              '<p>' + textAns + '</p>' +
+            '</div>'
+          );
+        }
+        
+        const progressHtml = (isTicked && item.shineType !== 'TEXT') 
+          ? '<span class="percentage-badge">Progress: ' + state.percentage + '%</span>' 
+          : '';
+          
+        detailsHtml = (
+          '<div class="sector-details">' +
+            '<div class="status-row">' +
+              '<span class="status-badge ' + statusClass + '">' + statusText + '</span>' +
+              progressHtml +
+            '</div>' +
+            textAnsHtml +
+          '</div>'
+        );
       }
       
-      return `
-        <tr>
-          <td style="font-weight: 600;">${item.name}</td>
-          <td>${typeLabels[item.type]}</td>
-          <td style="text-align: center;">${typeMaxMarks[item.type]}.0</td>
-          <td style="text-align: center;">${statusStr}</td>
-          <td style="text-align: right;" class="total-cell">${liveMarks.toFixed(1)}</td>
-        </tr>
-      `;
-    }).join('');
+      const descHtml = item.description 
+        ? '<p class="criteria-description">' + item.description + '</p>' 
+        : '';
+        
+      return (
+        '<div class="criteria-card">' +
+          '<div class="card-header">' +
+            '<div class="card-title-group">' +
+              '<h3>' + item.name + '</h3>' +
+              '<span class="type-badge">' + typeLabels[item.type] + '</span>' +
+            '</div>' +
+            '<div class="card-score-group">' +
+              '<span class="score-value">' + liveMarks.toFixed(1) + '</span>' +
+              '<span class="score-max">/ ' + typeMaxMarks[item.type] + '.0 Marks</span>' +
+            '</div>' +
+          '</div>' +
+          descHtml +
+          '<div class="card-body">' +
+            detailsHtml +
+          '</div>' +
+        '</div>'
+      );
+    };
+
+    const cardsHtml = criteria.map(item => getCriteriaCardHtml(item)).join('');
     
     const htmlContent = `
       <html>
         <head>
-          <title>Sector Grace Marks Report</title>
+          <title>Sector Grace Marks Checklist Report</title>
           <style>
             body {
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
               color: #1e293b;
               padding: 40px;
+              background-color: #ffffff;
+              line-height: 1.5;
             }
             h1 {
               color: #0f172a;
-              font-size: 24px;
+              font-size: 26px;
               text-transform: uppercase;
-              letter-spacing: 1px;
+              letter-spacing: 0.5px;
               margin-bottom: 5px;
+              font-weight: 800;
             }
             .subtitle {
               color: #64748b;
-              font-size: 14px;
+              font-size: 13px;
               margin-bottom: 30px;
+              border-bottom: 1px solid #e2e8f0;
+              padding-bottom: 15px;
             }
             .summary-card {
-              background-color: #f8fafc;
-              border: 1px solid #e2e8f0;
-              border-radius: 12px;
-              padding: 20px;
-              margin-bottom: 30px;
-              font-size: 16px;
-              font-weight: bold;
-              color: #0f172a;
+              background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+              color: #ffffff;
+              border-radius: 16px;
+              padding: 20px 24px;
+              margin-bottom: 35px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             }
-            .summary-card span {
-              color: #4f46e5;
-              font-size: 20px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-            }
-            th, td {
-              border: 1px solid #e2e8f0;
-              padding: 12px 15px;
-              text-align: left;
-            }
-            th {
-              background-color: #f8fafc;
-              color: #475569;
-              font-size: 11px;
+            .summary-title {
+              font-size: 12px;
               text-transform: uppercase;
               letter-spacing: 1px;
               font-weight: 700;
+              opacity: 0.9;
             }
-            td {
-              font-size: 13px;
+            .summary-score {
+              font-size: 24px;
+              font-weight: 800;
             }
-            .total-cell {
-              font-weight: bold;
+            .criteria-card {
+              background-color: #ffffff;
+              border: 1px solid #e2e8f0;
+              border-radius: 14px;
+              padding: 20px;
+              margin-bottom: 25px;
+              page-break-inside: avoid;
+            }
+            .card-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              border-bottom: 1px solid #f1f5f9;
+              padding-bottom: 12px;
+              margin-bottom: 12px;
+            }
+            .card-title-group h3 {
+              margin: 0 0 6px 0;
+              font-size: 16px;
+              color: #0f172a;
+              text-transform: uppercase;
+              font-weight: 700;
+            }
+            .type-badge {
+              font-size: 10px;
+              background-color: #f1f5f9;
+              color: #475569;
+              padding: 2px 8px;
+              border-radius: 4px;
+              font-weight: 600;
+              text-transform: uppercase;
+            }
+            .card-score-group {
+              text-align: right;
+            }
+            .score-value {
+              font-size: 20px;
+              font-weight: 800;
               color: #4f46e5;
+            }
+            .score-max {
+              font-size: 11px;
+              color: #64748b;
+              font-weight: 500;
+            }
+            .criteria-description {
+              font-size: 12px;
+              color: #64748b;
+              margin: 0 0 16px 0;
+              font-style: italic;
+            }
+            .units-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 10px;
+            }
+            .unit-item {
+              display: flex;
+              align-items: center;
+              padding: 10px 14px;
+              border-radius: 8px;
+              font-size: 12px;
+              font-weight: 600;
+              border: 1px solid #e2e8f0;
+            }
+            .unit-item.status-success {
+              background-color: #f0fdf4;
+              border-color: #bbf7d0;
+              color: #166534;
+            }
+            .unit-item.status-pending {
+              background-color: #f8fafc;
+              border-color: #e2e8f0;
+              color: #64748b;
+            }
+            .unit-icon {
+              margin-right: 8px;
+              font-weight: bold;
+              font-size: 14px;
+            }
+            .unit-name {
+              flex-grow: 1;
+              text-transform: uppercase;
+            }
+            .unit-status {
+              font-size: 10px;
+              text-transform: uppercase;
+              font-weight: 700;
+              opacity: 0.8;
+            }
+            .sector-details {
+              padding: 4px 0;
+            }
+            .status-row {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+            }
+            .status-badge {
+              font-size: 11px;
+              font-weight: 700;
+              padding: 4px 10px;
+              border-radius: 6px;
+              text-transform: uppercase;
+            }
+            .status-badge.status-success {
+              background-color: #ecfdf5;
+              color: #065f46;
+            }
+            .status-badge.status-partial {
+              background-color: #fef3c7;
+              color: #92400e;
+            }
+            .status-badge.status-pending {
+              background-color: #f8fafc;
+              color: #64748b;
+            }
+            .percentage-badge {
+              font-size: 11px;
+              font-weight: 600;
+              color: #4f46e5;
+              background-color: #e0e7ff;
+              padding: 4px 10px;
+              border-radius: 6px;
+            }
+            .text-answer-box {
+              margin-top: 15px;
+              background-color: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              padding: 12px 15px;
+            }
+            .text-answer-box strong {
+              font-size: 11px;
+              text-transform: uppercase;
+              color: #475569;
+              display: block;
+              margin-bottom: 6px;
+            }
+            .text-answer-box p {
+              margin: 0;
+              font-size: 13px;
+              color: #0f172a;
+              white-space: pre-wrap;
             }
             .footer {
               margin-top: 50px;
@@ -192,6 +425,14 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
               border-top: 1px solid #f1f5f9;
               padding-top: 20px;
             }
+            @media print {
+              body {
+                padding: 0;
+              }
+              .criteria-card {
+                page-break-inside: avoid;
+              }
+            }
           </style>
         </head>
         <body>
@@ -199,23 +440,15 @@ export default function GraceMarksSectorClient({ criteria, initialSubmissions, u
           <div class="subtitle">Generated on ${dateStr} | SSF Pulikkal Division</div>
           
           <div class="summary-card">
-            Live Estimated Cumulative Grace Score: <span>${totalLiveMarks.toFixed(1)} / 60.0 Marks</span>
+            <div>
+              <div class="summary-title">Live Estimated Cumulative Score</div>
+              <div class="summary-score">${totalLiveMarks.toFixed(1)} / 60.0 Marks</div>
+            </div>
           </div>
           
-          <table>
-            <thead>
-              <tr>
-                <th>Criteria Name</th>
-                <th>Type</th>
-                <th style="text-align: center;">Max Marks</th>
-                <th style="text-align: center;">Completion Status</th>
-                <th style="text-align: right;">Estimated Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
+          <div class="cards-container">
+            ${cardsHtml}
+          </div>
           
           <div class="footer">
             Grace Mark Management System &copy; ${new Date().getFullYear()} - SSF Pulikkal Division. All rights reserved.

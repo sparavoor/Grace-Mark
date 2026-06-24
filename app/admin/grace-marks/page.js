@@ -36,7 +36,9 @@ export default async function GraceMarksAdminPage() {
       unitsCount: sector.units.length,
       graceMarks: scores.graceMarks,
       graceMarksTotal: scores.graceMarksTotal,
-      totalScore: scores.total
+      totalScore: scores.total,
+      submissions: sector.graceMarkSubmissions,
+      units: sector.units
     };
   });
 

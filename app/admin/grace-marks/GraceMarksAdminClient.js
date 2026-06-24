@@ -19,17 +19,69 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
   const [editingId, setEditingId] = useState(null);
 
   const handleExportExcel = () => {
-    const headers = ['Sector', 'Unit Sahityotsav Score', 'Unit Sahityotsav %', 'Bright Unit Sahityotsav Score', 'Bright Unit Sahityotsav %', 'Shine Sector Score', 'Shine Sector Completed', 'Total Grace Score'];
-    const rows = sectorScores.map(sector => [
-      sector.name,
-      sector.graceMarks.unitSahityotsav.isTicked ? sector.graceMarks.unitSahityotsav.marks : 0,
-      sector.graceMarks.unitSahityotsav.isTicked ? sector.graceMarks.unitSahityotsav.percentage : 0,
-      sector.graceMarks.brightUnitSahityotsav.isTicked ? sector.graceMarks.brightUnitSahityotsav.marks : 0,
-      sector.graceMarks.brightUnitSahityotsav.isTicked ? sector.graceMarks.brightUnitSahityotsav.percentage : 0,
-      sector.graceMarks.shineSector.isTicked ? sector.graceMarks.shineSector.marks : 0,
-      sector.graceMarks.shineSector.isTicked ? sector.graceMarks.shineSector.percentage : 0,
-      sector.graceMarksTotal.toFixed(1)
-    ]);
+    const headers = ['Sector', 'Criteria Name', 'Type', 'Scope', 'Unit (if unit-level)', 'Status', 'Value completed (Steps/%)', 'Text Answer'];
+    const rows = [];
+    
+    sectorScores.forEach(sector => {
+      criteria.forEach(c => {
+        const isUnitLevel = c.type === 'UNIT_SAHITYOTSAV' || c.type === 'BRIGHT_UNIT_SAHITYOTSAV';
+        const typeLabel = c.type === 'UNIT_SAHITYOTSAV' ? 'Unit Sahityotsav' : c.type === 'BRIGHT_UNIT_SAHITYOTSAV' ? 'Bright Unit Sahityotsav' : 'Shine Sector';
+        
+        if (isUnitLevel) {
+          const sUnits = sector.units || [];
+          sUnits.forEach(unit => {
+            const sub = (sector.submissions || []).find(s => s.criteriaId === c.id && s.unitId === unit.id);
+            const isTicked = sub ? sub.isTicked : false;
+            const pct = sub ? sub.percentage : 0;
+            
+            let status = 'Not Completed';
+            if (isTicked) {
+              if (c.shineType === 'NUMBER') {
+                status = c.targetSteps && pct >= c.targetSteps ? 'Target Reached' : 'Below Target';
+              } else {
+                status = 'Completed';
+              }
+            }
+            
+            rows.push([
+              sector.name,
+              c.name,
+              typeLabel,
+              'Unit Level',
+              unit.name,
+              status,
+              c.shineType === 'NUMBER' ? pct : (isTicked ? '100%' : '0%'),
+              '-'
+            ]);
+          });
+        } else {
+          const sub = (sector.submissions || []).find(s => s.criteriaId === c.id && !s.unitId);
+          const isTicked = sub ? sub.isTicked : false;
+          const pct = sub ? sub.percentage : 0;
+          const textAns = sub ? sub.textAnswer || '' : '';
+          
+          let status = 'Not Claimed';
+          if (isTicked) {
+            if (c.shineType === 'NUMBER') {
+              status = c.targetSteps && pct >= c.targetSteps ? 'Target Reached' : 'Below Target';
+            } else {
+              status = 'Claimed';
+            }
+          }
+          
+          rows.push([
+            sector.name,
+            c.name,
+            typeLabel,
+            'Sector Level',
+            '-',
+            status,
+            c.shineType === 'NUMBER' ? pct : (isTicked ? '100%' : '0%'),
+            textAns || '-'
+          ]);
+        }
+      });
+    });
     
     let csvContent = "\uFEFF"; // UTF-8 BOM
     csvContent += [headers.join(','), ...rows.map(row => row.map(val => `"${val}"`).join(','))].join('\n');
@@ -38,7 +90,7 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `SSF_Gracemark_Data_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `SSF_Gracemark_Detailed_Report_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -48,13 +100,104 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
     const printWindow = window.open('', '_blank');
     const dateStr = new Date().toLocaleDateString();
     
+    const sectorsHtml = sectorScores.map(sector => {
+      const detailedRows = criteria.map(c => {
+        const isUnitLevel = c.type === 'UNIT_SAHITYOTSAV' || c.type === 'BRIGHT_UNIT_SAHITYOTSAV';
+        const typeLabel = c.type === 'UNIT_SAHITYOTSAV' ? 'Unit Sahityotsav' : c.type === 'BRIGHT_UNIT_SAHITYOTSAV' ? 'Bright Unit Sahityotsav' : 'Shine Sector';
+        
+        let completionDetail = '';
+        let statusClass = 'status-pending';
+        
+        if (isUnitLevel) {
+          const sUnits = sector.units || [];
+          let completed = 0;
+          let completedNames = [];
+          
+          sUnits.forEach(unit => {
+            const sub = (sector.submissions || []).find(s => s.criteriaId === c.id && s.unitId === unit.id);
+            const isTicked = sub ? sub.isTicked : false;
+            const pct = sub ? sub.percentage : 0;
+            
+            let isDone = isTicked;
+            if (isTicked && c.shineType === 'NUMBER' && c.targetSteps) {
+              isDone = pct >= c.targetSteps;
+            }
+            
+            if (isDone) {
+              completed++;
+              completedNames.push(unit.name);
+            }
+          });
+          
+          completionDetail = `Completed in ${completed} / ${sUnits.length} Units` + 
+            (completedNames.length > 0 ? ` (${completedNames.join(', ')})` : '');
+          statusClass = completed === sUnits.length ? 'status-success' : completed > 0 ? 'status-partial' : 'status-pending';
+        } else {
+          const sub = (sector.submissions || []).find(s => s.criteriaId === c.id && !s.unitId);
+          const isTicked = sub ? sub.isTicked : false;
+          const pct = sub ? sub.percentage : 0;
+          const textAns = sub ? sub.textAnswer : '';
+          
+          if (isTicked) {
+            if (c.shineType === 'NUMBER') {
+              completionDetail = c.targetSteps && pct >= c.targetSteps 
+                ? `Target Reached (${pct} steps completed)` 
+                : `Below Target (${pct} steps completed)`;
+              statusClass = c.targetSteps && pct >= c.targetSteps ? 'status-success' : 'status-partial';
+            } else if (c.shineType === 'TEXT') {
+              completionDetail = `Claimed - Short Answer: "${textAns}"`;
+              statusClass = 'status-success';
+            } else {
+              completionDetail = 'Claimed';
+              statusClass = 'status-success';
+            }
+          } else {
+            completionDetail = 'Not Claimed';
+            statusClass = 'status-pending';
+          }
+        }
+        
+        return `
+          <tr>
+            <td style="font-weight: 600;">${c.name}</td>
+            <td>${typeLabel}</td>
+            <td><span class="status-badge ${statusClass}">${completionDetail}</span></td>
+          </tr>
+        `;
+      }).join('');
+
+      return `
+        <div class="sector-block">
+          <h2>Sector: ${sector.name}</h2>
+          <div class="score-summary">
+            Unit Sahityotsav: <strong>${sector.graceMarks.unitSahityotsav.marks} / 15</strong> | 
+            Bright Unit: <strong>${sector.graceMarks.brightUnitSahityotsav.marks} / 25</strong> | 
+            Shine Sector: <strong>${sector.graceMarks.shineSector.marks} / 20</strong> | 
+            Cumulative Score: <strong style="color: #4f46e5;">${sector.graceMarksTotal.toFixed(1)} / 60.0</strong>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 40%;">Criteria Name</th>
+                <th style="width: 25%;">Type</th>
+                <th style="width: 35%;">Submission Detail / Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${detailedRows}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }).join('<div class="page-break"></div>');
+
     const htmlContent = `
       <html>
         <head>
-          <title>Gracemark Performance Report - SSF Pulikkal Division</title>
+          <title>Detailed Gracemark Performance Ledger</title>
           <style>
             body {
-              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
               color: #1e293b;
               padding: 40px;
             }
@@ -65,35 +208,69 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
               letter-spacing: 1px;
               margin-bottom: 5px;
             }
+            h2 {
+              color: #0f172a;
+              font-size: 16px;
+              text-transform: uppercase;
+              border-bottom: 2px solid #f1f5f9;
+              padding-bottom: 8px;
+              margin-top: 0;
+            }
             .subtitle {
               color: #64748b;
-              font-size: 14px;
-              margin-bottom: 30px;
+              font-size: 13px;
+              margin-bottom: 40px;
+            }
+            .sector-block {
+              margin-bottom: 40px;
+            }
+            .score-summary {
+              background-color: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              padding: 12px 15px;
+              font-size: 12px;
+              margin-bottom: 15px;
+              font-weight: 500;
             }
             table {
               width: 100%;
               border-collapse: collapse;
-              margin-top: 20px;
+              margin-bottom: 20px;
             }
             th, td {
               border: 1px solid #e2e8f0;
-              padding: 12px 15px;
+              padding: 10px 12px;
               text-align: left;
+              font-size: 12px;
             }
             th {
               background-color: #f8fafc;
               color: #475569;
-              font-size: 11px;
               text-transform: uppercase;
-              letter-spacing: 1px;
+              letter-spacing: 0.5px;
               font-weight: 700;
             }
-            td {
-              font-size: 13px;
+            .status-badge {
+              font-size: 11px;
+              font-weight: 600;
+              padding: 2px 6px;
+              border-radius: 4px;
             }
-            .total-cell {
-              font-weight: bold;
-              color: #4f46e5;
+            .status-success {
+              background-color: #ecfdf5;
+              color: #065f46;
+            }
+            .status-partial {
+              background-color: #fef3c7;
+              color: #92400e;
+            }
+            .status-pending {
+              background-color: #f8fafc;
+              color: #64748b;
+            }
+            .page-break {
+              page-break-after: always;
             }
             .footer {
               margin-top: 50px;
@@ -103,40 +280,17 @@ export default function GraceMarksAdminClient({ initialCriteria, sectorScores })
               border-top: 1px solid #f1f5f9;
               padding-top: 20px;
             }
+            @media print {
+              body { padding: 0; }
+              .page-break { page-break-after: always; }
+            }
           </style>
         </head>
         <body>
-          <h1>Gracemark Performance Report</h1>
+          <h1>Detailed Gracemark Performance Ledger</h1>
           <div class="subtitle">Generated on ${dateStr} | SSF Pulikkal Division</div>
           
-          <table>
-            <thead>
-              <tr>
-                <th>Sector</th>
-                <th style="text-align: center;">Unit Sahityotsav</th>
-                <th style="text-align: center;">Bright Unit Sahityotsav</th>
-                <th style="text-align: center;">Shine Sector</th>
-                <th style="text-align: right;">Total Grace Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${sectorScores.map(sector => `
-                <tr>
-                  <td style="font-weight: 600;">${sector.name} (${sector.unitsCount} Units)</td>
-                  <td style="text-align: center;">
-                    ${sector.graceMarks.unitSahityotsav.isTicked ? `${sector.graceMarks.unitSahityotsav.marks} / 15 (${sector.graceMarks.unitSahityotsav.percentage}%)` : '-'}
-                  </td>
-                  <td style="text-align: center;">
-                    ${sector.graceMarks.brightUnitSahityotsav.isTicked ? `${sector.graceMarks.brightUnitSahityotsav.marks} / 25 (${sector.graceMarks.brightUnitSahityotsav.percentage}%)` : '-'}
-                  </td>
-                  <td style="text-align: center;">
-                    ${sector.graceMarks.shineSector.isTicked ? `${sector.graceMarks.shineSector.marks} / 20 (${sector.graceMarks.shineSector.percentage})` : '-'}
-                  </td>
-                  <td style="text-align: right;" class="total-cell">${sector.graceMarksTotal.toFixed(1)} / 60.0</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+          ${sectorsHtml}
           
           <div class="footer">
             Grace Mark Management System &copy; ${new Date().getFullYear()} - SSF Pulikkal Division. All rights reserved.
